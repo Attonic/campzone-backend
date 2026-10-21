@@ -137,6 +137,22 @@ class SecurityConfigWebTest {
     }
 
     @Test
+    void organizacaoAtualPrimitivaTambemVemDoTokenEIgnoraAQuery() throws Exception {
+        mockMvc.perform(get("/api/v1/teste/organizacao-atual-primitivo?organizacaoId=99").with(organizador(1, 10)))
+                .andExpect(status().isOk())
+                .andExpect(content().string("10"));
+    }
+
+    @Test
+    void organizacaoAtualEmTipoNaoSuportadoFalhaEmVezDeLerAQuery() throws Exception {
+        mockMvc.perform(get("/api/v1/teste/organizacao-atual-texto?organizacaoId=99").with(organizador(1, 10)))
+                .andExpect(status().isInternalServerError())
+                .andExpect(content().string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("99"))));
+        mockMvc.perform(get("/api/v1/teste/organizacao-atual-inteiro?organizacaoId=99").with(organizador(1, 10)))
+                .andExpect(status().isInternalServerError());
+    }
+
+    @Test
     @WithMockUser(roles = "ORGANIZADOR")
     void autenticacaoQueNaoEJwtNaoResolveOrganizacao() throws Exception {
         mockMvc.perform(get("/api/v1/teste/organizacao-atual"))

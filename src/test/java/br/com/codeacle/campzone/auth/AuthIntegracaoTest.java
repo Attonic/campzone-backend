@@ -327,6 +327,21 @@ class AuthIntegracaoTest {
     }
 
     @Test
+    void organizacaoAtualPrimitivaEmTipoNaoSuportadoNaoLeAQuery() throws Exception {
+        MvcResult orgA = cadastrar(emailUnico());
+        MvcResult orgB = cadastrar(emailUnico());
+        long idA = organizacaoId(orgA).longValue();
+        long idB = organizacaoId(orgB).longValue();
+
+        mockMvc.perform(get("/api/v1/teste/organizacao-atual-primitivo?organizacaoId=" + idB)
+                .header(HttpHeaders.AUTHORIZATION, bearer(token(orgA))))
+                .andExpect(content().string(String.valueOf(idA)));
+        mockMvc.perform(get("/api/v1/teste/organizacao-atual-texto?organizacaoId=" + idB)
+                .header(HttpHeaders.AUTHORIZATION, bearer(token(orgA))))
+                .andExpect(status().isInternalServerError());
+    }
+
+    @Test
     void adminRecebe403QuandoARotaDependeDeOrganizacao() throws Exception {
         String admin = token(login("admin@campzone.dev", "admin12345"));
 

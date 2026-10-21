@@ -56,6 +56,23 @@ public class ApiTesteController {
         return organizacaoId;
     }
 
+    /** Primitivo: sem o resolver cobrir {@code long}, o Spring leria {@code ?organizacaoId=} da query. */
+    @GetMapping("/teste/organizacao-atual-primitivo")
+    long organizacaoAtualPrimitivo(@OrganizacaoAtual long organizacaoId) {
+        return organizacaoId;
+    }
+
+    /** Tipo não suportado: deve falhar, nunca ler da query. */
+    @GetMapping("/teste/organizacao-atual-texto")
+    String organizacaoAtualTexto(@OrganizacaoAtual String organizacaoId) {
+        return organizacaoId;
+    }
+
+    @GetMapping("/teste/organizacao-atual-inteiro")
+    String organizacaoAtualInteiro(@OrganizacaoAtual Integer organizacaoId) {
+        return String.valueOf(organizacaoId);
+    }
+
     @PostMapping("/teste/organizacao-atual")
     Long organizacaoAtualComBody(@OrganizacaoAtual Long organizacaoId, @RequestBody Map<String, Object> corpo) {
         return organizacaoId;
