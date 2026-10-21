@@ -64,6 +64,36 @@ public final class TokensDeTeste {
                 .getTokenValue();
     }
 
+    /** HS256 com a assinatura correta, mas sem o claim {@code exp}. */
+    public static String tokenSemExp() {
+        JwtClaimsSet claims = JwtClaimsSet.builder().subject("1").issuedAt(Instant.now())
+                .claim("papel", "ORGANIZADOR").claim("org", 1L).build();
+        return codificar(SEGREDO, claims);
+    }
+
+    /**
+     * JWT montado à mão: cabeçalho e payload em JSON e assinatura HMAC com o algoritmo JCA informado (ou lixo, se
+     * {@code algoritmoJca} for nulo). Serve para testar algoritmos que o encoder do Spring não emite.
+     */
+    public static String manual(String cabecalhoJson, String algoritmoJca, String segredo) {
+        var base64 = java.util.Base64.getUrlEncoder().withoutPadding();
+        long exp = Instant.now().plusSeconds(3600).getEpochSecond();
+        String payload = "{\"sub\":\"1\",\"papel\":\"ORGANIZADOR\",\"org\":1,\"exp\":" + exp + "}";
+        String conteudo = base64.encodeToString(cabecalhoJson.getBytes(StandardCharsets.UTF_8)) + "."
+                + base64.encodeToString(payload.getBytes(StandardCharsets.UTF_8));
+        byte[] assinatura = new byte[64];
+        if (algoritmoJca != null) {
+            try {
+                var mac = javax.crypto.Mac.getInstance(algoritmoJca);
+                mac.init(new SecretKeySpec(segredo.getBytes(StandardCharsets.UTF_8), algoritmoJca));
+                assinatura = mac.doFinal(conteudo.getBytes(StandardCharsets.UTF_8));
+            } catch (java.security.GeneralSecurityException e) {
+                throw new IllegalStateException(e);
+            }
+        }
+        return conteudo + "." + base64.encodeToString(assinatura);
+    }
+
     public static String tokenValido(String papel, Long organizacaoId) {
         Instant agora = Instant.now();
         return token(SEGREDO, agora, agora.plus(Duration.ofHours(1)), 1L, papel, organizacaoId);

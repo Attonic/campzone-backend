@@ -257,6 +257,38 @@ class SecurityConfigWebTest {
     }
 
     @Test
+    void tokenHs256ValidoSemExpDevolve401() throws Exception {
+        mockMvc.perform(get("/api/v1/privado").header(HttpHeaders.AUTHORIZATION,
+                bearer(TokensDeTeste.tokenSemExp())))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void tokenHs512AssinadoComOMesmoSegredoDevolve401() throws Exception {
+        String token = TokensDeTeste.manual("{\"alg\":\"HS512\"}", "HmacSHA512", TokensDeTeste.SEGREDO);
+
+        mockMvc.perform(get("/api/v1/privado").header(HttpHeaders.AUTHORIZATION, bearer(token)))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void tokenComCabecalhoRs256Devolve401() throws Exception {
+        String token = TokensDeTeste.manual("{\"alg\":\"RS256\"}", null, TokensDeTeste.SEGREDO);
+
+        mockMvc.perform(get("/api/v1/privado").header(HttpHeaders.AUTHORIZATION, bearer(token)))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void controleDoTokenManualHs256AssinadoCorretamenteEAceito() throws Exception {
+        // Garante que o helper manual produz um JWT válido: o 401 dos testes acima vem do algoritmo, não de bug dele.
+        String token = TokensDeTeste.manual("{\"alg\":\"HS256\"}", "HmacSHA256", TokensDeTeste.SEGREDO);
+
+        mockMvc.perform(get("/api/v1/privado").header(HttpHeaders.AUTHORIZATION, bearer(token)))
+                .andExpect(status().isOk());
+    }
+
+    @Test
     void firewallBarraRequisicaoComPontoEVirgulaEmProblemDetail() throws Exception {
         mockMvc.perform(get("/api/v1/public/a;b"))
                 .andExpect(status().isBadRequest())
