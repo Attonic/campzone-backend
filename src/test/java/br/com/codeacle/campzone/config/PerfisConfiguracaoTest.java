@@ -23,6 +23,8 @@ import br.com.codeacle.campzone.CampzoneApplication;
  */
 class PerfisConfiguracaoTest {
 
+    private static final String SEGREDO = "segredo-de-teste-campzone-0123456789-abcdef";
+
     @Configuration
     static class ConfiguracaoVazia {
     }
@@ -57,6 +59,8 @@ class PerfisConfiguracaoTest {
             assertThat(env.getDefaultProfiles()).contains("dev");
             assertThat(env.getProperty("spring.datasource.url")).isEqualTo("jdbc:postgresql://localhost:5433/campzone");
             assertThat(env.getProperty("logging.level.br.com.codeacle.campzone")).isEqualTo("DEBUG");
+            assertThat(env.getProperty("campzone.admin.email")).isEqualTo("admin@campzone.dev");
+            assertThat(env.getProperty("campzone.jwt.segredo")).hasSizeGreaterThanOrEqualTo(32);
         }
     }
 
@@ -99,8 +103,45 @@ class PerfisConfiguracaoTest {
     @Test
     void aplicacaoRealEmProdComDbUrlVazioCitaApenasDbUrl() {
         assertThatThrownBy(() -> construtor(CampzoneApplication.class, "spring.profiles.active=prod",
-                "DB_URL=", "DB_USER=u", "DB_PASSWORD=p").run())
+                "DB_URL=", "DB_USER=u", "DB_PASSWORD=p", "JWT_SECRET=" + SEGREDO, "ADMIN_EMAIL=a@x.com",
+                "ADMIN_SENHA=senha-admin").run())
                 .hasStackTraceContaining("ausentes ou vazias: DB_URL. Defina");
+    }
+
+    @Test
+    void prodSemJwtSecretEAdminNaoSobeEListaOQueFalta() {
+        assertThatThrownBy(() -> construtor(CampzoneApplication.class, "spring.profiles.active=prod",
+                "DB_URL=jdbc:postgresql://db:5432/x", "DB_USER=u", "DB_PASSWORD=p").run())
+                .hasStackTraceContaining("ausentes ou vazias: JWT_SECRET, ADMIN_EMAIL, ADMIN_SENHA. Defina");
+    }
+
+    @Test
+    void prodSemApenasOJwtSecretCitaSoEle() {
+        assertThatThrownBy(() -> construtor(CampzoneApplication.class, "spring.profiles.active=prod",
+                "DB_URL=jdbc:postgresql://db:5432/x", "DB_USER=u", "DB_PASSWORD=p", "ADMIN_EMAIL=a@x.com",
+                "ADMIN_SENHA=senha-admin").run())
+                .hasStackTraceContaining("ausentes ou vazias: JWT_SECRET. Defina");
+    }
+
+    @Test
+    void prodComJwtSecretCurtoNaoSobe() {
+        assertThatThrownBy(() -> construtor(CampzoneApplication.class, "spring.profiles.active=prod",
+                "DB_URL=jdbc:postgresql://db:5432/x", "DB_USER=u", "DB_PASSWORD=p", "JWT_SECRET=curto",
+                "ADMIN_EMAIL=a@x.com", "ADMIN_SENHA=senha-admin").run())
+                .hasStackTraceContaining("JWT_SECRET deve ter no mínimo 32 bytes");
+    }
+
+    @Test
+    void prodNaoTemDefaultParaSegredoENemParaAdmin() {
+        try (ConfigurableApplicationContext contexto = construtor("spring.profiles.active=prod").run()) {
+            Environment env = contexto.getEnvironment();
+            assertThatThrownBy(() -> env.getProperty("campzone.jwt.segredo"))
+                    .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("JWT_SECRET");
+            assertThatThrownBy(() -> env.getProperty("campzone.admin.email"))
+                    .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("ADMIN_EMAIL");
+            assertThatThrownBy(() -> env.getProperty("campzone.admin.senha"))
+                    .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("ADMIN_SENHA");
+        }
     }
 
     @Test

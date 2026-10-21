@@ -4,9 +4,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
+import org.springframework.core.annotation.Order;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Component;
 
+import br.com.codeacle.campzone.common.config.SeedOrdem;
 import br.com.codeacle.campzone.plano.domain.Plano;
 import br.com.codeacle.campzone.plano.repository.PlanoRepository;
 
@@ -15,6 +17,7 @@ import br.com.codeacle.campzone.plano.repository.PlanoRepository;
  * alterados no banco. Roda em todos os perfis. Os limites do plano grátis aparecem somente aqui.
  */
 @Component
+@Order(SeedOrdem.PLANO)
 public class PlanoSeeder implements ApplicationRunner {
 
     public static final String CODIGO_GRATIS = "GRATIS";
