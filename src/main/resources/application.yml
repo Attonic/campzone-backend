@@ -1,10 +1,8 @@
 # Configuração comum a todos os perfis. Sem credenciais: elas ficam em application-dev.yml (Docker local)
-# e em variáveis de ambiente (prod). Sem perfil informado, o perfil padrão é o dev.
+# e em variáveis de ambiente (prod). NÃO há perfil padrão (ADR 0004): sem SPRING_PROFILES_ACTIVE a aplicação não sobe.
 spring:
   application:
     name: campzone
-  profiles:
-    default: dev
   jpa:
     open-in-view: false
     hibernate:

@@ -53,10 +53,28 @@ class PerfisConfiguracaoTest {
     }
 
     @Test
-    void semPerfilInformadoOPadraoEODev() {
+    void semPerfilAtivoAAplicacaoNaoSobeEExplicaOQueFazer() {
+        assertThatThrownBy(() -> construtor(CampzoneApplication.class).run())
+                .hasStackTraceContaining("Nenhum perfil ativo: defina SPRING_PROFILES_ACTIVE=dev "
+                        + "(desenvolvimento) ou prod.");
+    }
+
+    @Test
+    void naoExistePerfilPadrao() {
         try (ConfigurableApplicationContext contexto = construtor().run()) {
             Environment env = contexto.getEnvironment();
-            assertThat(env.getDefaultProfiles()).contains("dev");
+            assertThat(env.getActiveProfiles()).isEmpty();
+            assertThat(env.getDefaultProfiles()).containsExactly("default");
+            assertThat(env.getProperty("campzone.admin.email")).isNull();
+            assertThat(env.getProperty("campzone.jwt.segredo")).isNull();
+        }
+    }
+
+    @Test
+    void perfilDevUsaOBancoLocalEAsContasDeDesenvolvimento() {
+        try (ConfigurableApplicationContext contexto = construtor("spring.profiles.active=dev").run()) {
+            Environment env = contexto.getEnvironment();
+            assertThat(env.getActiveProfiles()).containsExactly("dev");
             assertThat(env.getProperty("spring.datasource.url")).isEqualTo("jdbc:postgresql://localhost:5433/campzone");
             assertThat(env.getProperty("logging.level.br.com.codeacle.campzone")).isEqualTo("DEBUG");
             assertThat(env.getProperty("campzone.admin.email")).isEqualTo("admin@campzone.dev");
