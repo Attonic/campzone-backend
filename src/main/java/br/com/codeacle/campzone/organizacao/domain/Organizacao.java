@@ -49,10 +49,6 @@ public class Organizacao {
         this.nome = textoObrigatorio(novoNome, "Nome da organização", 120);
     }
 
-    public void trocarPlano(Plano novoPlano) {
-        this.plano = obrigatorio(novoPlano, "Plano");
-    }
-
     public Long getId() {
         return id;
     }

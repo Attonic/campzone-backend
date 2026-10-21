@@ -34,10 +34,7 @@ class OrganizacaoPlanoDominioTest {
         assertThatThrownBy(() -> new Organizacao("", plano)).isInstanceOf(InvarianteDominioException.class);
         assertThatThrownBy(() -> new Organizacao("Org", null)).isInstanceOf(InvarianteDominioException.class);
 
-        Plano outro = new Plano("PRO", "Pro", 5, 32);
-        org.trocarPlano(outro);
         org.renomear("Nova");
-        assertThat(org.getPlano()).isSameAs(outro);
         assertThat(org.getNome()).isEqualTo("Nova");
     }
 }
