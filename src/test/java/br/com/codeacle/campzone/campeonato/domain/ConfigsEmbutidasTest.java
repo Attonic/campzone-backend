@@ -69,18 +69,18 @@ class ConfigsEmbutidasTest {
         assertThat(config.getDesempates()).containsExactly(DesempateMataMata.GOLS_FORA, DesempateMataMata.PENALTIS);
         assertThat(config.getSeeding()).isEqualTo(Seeding.MANUAL);
         assertThat(config.isDisputaTerceiroLugar()).isTrue();
-        assertThatThrownBy(() -> new ConfigMataMataEmbutida(TipoConfronto.JOGO_UNICO, 3, List.of(), Seeding.MANUAL,
-                false)).isInstanceOf(InvarianteDominioException.class);
+        assertThatThrownBy(() -> new ConfigMataMataEmbutida(TipoConfronto.JOGO_UNICO, 3,
+                List.of(DesempateMataMata.SORTEIO), Seeding.MANUAL, false)).isInstanceOf(InvarianteDominioException.class);
     }
 
     @Test
     void serieExigeMelhorDeImparMaiorOuIgualATres() {
-        assertThat(new ConfigMataMataEmbutida(TipoConfronto.SERIE, 3, List.of(), Seeding.ALEATORIO, false)
+        assertThat(new ConfigMataMataEmbutida(TipoConfronto.SERIE, 3, List.of(DesempateMataMata.SORTEIO), Seeding.ALEATORIO, false)
                 .getMelhorDe()).isEqualTo(3);
-        assertThat(new ConfigMataMataEmbutida(TipoConfronto.SERIE, 7, List.of(), Seeding.ALEATORIO, false)
+        assertThat(new ConfigMataMataEmbutida(TipoConfronto.SERIE, 7, List.of(DesempateMataMata.SORTEIO), Seeding.ALEATORIO, false)
                 .getMelhorDe()).isEqualTo(7);
         for (Integer invalido : new Integer[] { null, 1, 2, 4, 6, 0, -3 }) {
-            assertThatThrownBy(() -> new ConfigMataMataEmbutida(TipoConfronto.SERIE, invalido, List.of(),
+            assertThatThrownBy(() -> new ConfigMataMataEmbutida(TipoConfronto.SERIE, invalido, List.of(DesempateMataMata.SORTEIO),
                     Seeding.ALEATORIO, false)).as("melhorDe=%s", invalido)
                     .isInstanceOf(InvarianteDominioException.class);
         }
@@ -88,9 +88,9 @@ class ConfigsEmbutidasTest {
 
     @Test
     void mataMataExigeTipoSeedingEDesempatesValidos() {
-        assertThatThrownBy(() -> new ConfigMataMataEmbutida(null, null, List.of(), Seeding.ALEATORIO, false))
+        assertThatThrownBy(() -> new ConfigMataMataEmbutida(null, null, List.of(DesempateMataMata.SORTEIO), Seeding.ALEATORIO, false))
                 .isInstanceOf(InvarianteDominioException.class);
-        assertThatThrownBy(() -> new ConfigMataMataEmbutida(TipoConfronto.JOGO_UNICO, null, List.of(), null, false))
+        assertThatThrownBy(() -> new ConfigMataMataEmbutida(TipoConfronto.JOGO_UNICO, null, List.of(DesempateMataMata.SORTEIO), null, false))
                 .isInstanceOf(InvarianteDominioException.class);
         assertThatThrownBy(() -> new ConfigMataMataEmbutida(TipoConfronto.JOGO_UNICO, null, null,
                 Seeding.ALEATORIO, false)).isInstanceOf(InvarianteDominioException.class);
@@ -100,5 +100,44 @@ class ConfigsEmbutidasTest {
         assertThatThrownBy(() -> new ConfigMataMataEmbutida(TipoConfronto.JOGO_UNICO, null,
                 Arrays.asList(DesempateMataMata.SORTEIO, null), Seeding.ALEATORIO, false))
                 .isInstanceOf(InvarianteDominioException.class);
+    }
+
+    @Test
+    void pontuacaoInvalidaEhRejeitada() {
+        assertThatThrownBy(() -> new ConfigPontosCorridosEmbutida(1, 3, 1, -1, true, CRITERIOS))
+                .isInstanceOf(InvarianteDominioException.class);
+        assertThatThrownBy(() -> new ConfigPontosCorridosEmbutida(1, 1, 3, 0, true, CRITERIOS))
+                .isInstanceOf(InvarianteDominioException.class).hasMessageContaining("vitória >= empate >= derrota");
+        assertThatThrownBy(() -> new ConfigPontosCorridosEmbutida(1, 3, 0, 1, true, CRITERIOS))
+                .isInstanceOf(InvarianteDominioException.class);
+        // pontuação de xadrez (1 / 0,5 aproximado em inteiros) e zeros são válidas
+        assertThat(new ConfigPontosCorridosEmbutida(1, 2, 1, 0, true, CRITERIOS).getPontosVitoria()).isEqualTo(2);
+        assertThat(new ConfigPontosCorridosEmbutida(1, 0, 0, 0, true, CRITERIOS).getPontosVitoria()).isZero();
+    }
+
+    @Test
+    void listaDeCriteriosVaziaEhRejeitada() {
+        assertThatThrownBy(() -> new ConfigPontosCorridosEmbutida(1, 3, 1, 0, true, List.of()))
+                .isInstanceOf(InvarianteDominioException.class).hasMessageContaining("critério");
+    }
+
+    @Test
+    void listaDeDesempatesDoMataMataVaziaEhRejeitada() {
+        assertThatThrownBy(() -> new ConfigMataMataEmbutida(TipoConfronto.JOGO_UNICO, null, List.of(),
+                Seeding.ALEATORIO, false)).isInstanceOf(InvarianteDominioException.class)
+                .hasMessageContaining("desempate");
+    }
+
+    @Test
+    void golsForaSoVaiComIdaEVolta() {
+        List<DesempateMataMata> desempates = List.of(DesempateMataMata.GOLS_FORA, DesempateMataMata.PENALTIS);
+
+        assertThat(new ConfigMataMataEmbutida(TipoConfronto.IDA_E_VOLTA, null, desempates, Seeding.ALEATORIO, false)
+                .getDesempates()).containsExactlyElementsOf(desempates);
+        assertThatThrownBy(() -> new ConfigMataMataEmbutida(TipoConfronto.JOGO_UNICO, null, desempates,
+                Seeding.ALEATORIO, false)).isInstanceOf(InvarianteDominioException.class)
+                .hasMessageContaining("GOLS_FORA");
+        assertThatThrownBy(() -> new ConfigMataMataEmbutida(TipoConfronto.SERIE, 3, desempates,
+                Seeding.ALEATORIO, false)).isInstanceOf(InvarianteDominioException.class);
     }
 }

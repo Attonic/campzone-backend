@@ -10,8 +10,6 @@ import br.com.codeacle.campzone.organizacao.domain.Organizacao;
 import jakarta.persistence.Column;
 import jakarta.persistence.Embedded;
 import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -55,13 +53,16 @@ public class Campeonato {
     @Column(nullable = false, length = TAMANHO_MAXIMO_SLUG)
     private String slug;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 20, updatable = false)
-    private FormatoCampeonato formato;
+    /**
+     * Gravado como texto simples (varchar) e não com {@code @Enumerated}: o Hibernate geraria uma CHECK com os
+     * valores do enum, que o {@code ddl-auto=update} nunca atualiza, travando a evolução do enum. O getter e as
+     * fábricas expõem o enum.
+     */
+    @Column(nullable = false, length = 40, updatable = false)
+    private String formato;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 20)
-    private StatusCampeonato status;
+    @Column(nullable = false, length = 40)
+    private String status;
 
     @Column(nullable = false)
     private boolean publico;
@@ -80,7 +81,7 @@ public class Campeonato {
     private Instant criadoEm;
 
     @Version
-    private long version;
+    private Long version;
 
     protected Campeonato() {
     }
@@ -91,7 +92,7 @@ public class Campeonato {
         this.nome = textoObrigatorio(nome, "Nome do campeonato", TAMANHO_MAXIMO_NOME);
         this.modalidade = textoObrigatorio(modalidade, "Modalidade", 60);
         this.slug = textoObrigatorio(slug, "Slug", TAMANHO_MAXIMO_SLUG);
-        this.formato = obrigatorio(formato, "Formato");
+        this.formato = obrigatorio(formato, "Formato").name();
         switch (formato) {
             case PONTOS_CORRIDOS -> {
                 exigir(configPontosCorridos != null, "Formato PONTOS_CORRIDOS exige a configuração de pontos corridos.");
@@ -104,7 +105,7 @@ public class Campeonato {
         }
         this.configPontosCorridos = configPontosCorridos;
         this.configMataMata = configMataMata;
-        this.status = StatusCampeonato.RASCUNHO;
+        this.status = StatusCampeonato.RASCUNHO.name();
         this.publico = false;
         this.criadoEm = Instant.now();
     }
@@ -145,17 +146,18 @@ public class Campeonato {
     }
 
     public void iniciar() {
-        exigir(status == StatusCampeonato.RASCUNHO, "Só é possível iniciar um campeonato em rascunho.");
-        this.status = StatusCampeonato.EM_ANDAMENTO;
+        exigir(getStatus() == StatusCampeonato.RASCUNHO, "Só é possível iniciar um campeonato em rascunho.");
+        this.status = StatusCampeonato.EM_ANDAMENTO.name();
     }
 
     public void finalizar() {
-        exigir(status == StatusCampeonato.EM_ANDAMENTO, "Só é possível finalizar um campeonato em andamento.");
-        this.status = StatusCampeonato.FINALIZADO;
+        exigir(getStatus() == StatusCampeonato.EM_ANDAMENTO, "Só é possível finalizar um campeonato em andamento.");
+        this.status = StatusCampeonato.FINALIZADO.name();
     }
 
     public boolean isAtivo() {
-        return status == StatusCampeonato.RASCUNHO || status == StatusCampeonato.EM_ANDAMENTO;
+        StatusCampeonato atual = getStatus();
+        return atual == StatusCampeonato.RASCUNHO || atual == StatusCampeonato.EM_ANDAMENTO;
     }
 
     public Long getId() {
@@ -179,11 +181,11 @@ public class Campeonato {
     }
 
     public FormatoCampeonato getFormato() {
-        return formato;
+        return FormatoCampeonato.valueOf(formato);
     }
 
     public StatusCampeonato getStatus() {
-        return status;
+        return StatusCampeonato.valueOf(status);
     }
 
     public boolean isPublico() {
@@ -196,12 +198,12 @@ public class Campeonato {
      * é o {@code formato}.
      */
     public ConfigPontosCorridosEmbutida getConfigPontosCorridos() {
-        return formato == FormatoCampeonato.PONTOS_CORRIDOS ? configPontosCorridos : null;
+        return getFormato() == FormatoCampeonato.PONTOS_CORRIDOS ? configPontosCorridos : null;
     }
 
     /** Nulo se o formato não for mata-mata (mesma observação de {@link #getConfigPontosCorridos()}). */
     public ConfigMataMataEmbutida getConfigMataMata() {
-        return formato == FormatoCampeonato.MATA_MATA ? configMataMata : null;
+        return getFormato() == FormatoCampeonato.MATA_MATA ? configMataMata : null;
     }
 
     public Long getSeedSorteio() {
@@ -212,7 +214,7 @@ public class Campeonato {
         return criadoEm;
     }
 
-    public long getVersion() {
+    public Long getVersion() {
         return version;
     }
 }

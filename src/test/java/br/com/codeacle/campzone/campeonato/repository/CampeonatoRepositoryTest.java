@@ -70,7 +70,7 @@ class CampeonatoRepositoryTest {
     @Test
     void persisteELeMataMataComConfigEDesempatesNaOrdem() {
         Organizacao org = org();
-        List<DesempateMataMata> desempates = List.of(DesempateMataMata.PENALTIS, DesempateMataMata.GOLS_FORA,
+        List<DesempateMataMata> desempates = List.of(DesempateMataMata.PENALTIS, DesempateMataMata.PRORROGACAO,
                 DesempateMataMata.SORTEIO);
         Campeonato novo = Campeonato.mataMata(org, "Copa", "Xadrez", Cenario.slugUnico(),
                 new ConfigMataMataEmbutida(TipoConfronto.SERIE, 5, desempates, Seeding.CABECAS_DE_CHAVE, true));
@@ -90,6 +90,24 @@ class CampeonatoRepositoryTest {
         assertThat(config.getSeeding()).isEqualTo(Seeding.CABECAS_DE_CHAVE);
         assertThat(config.isDisputaTerceiroLugar()).isTrue();
         assertThat(config.getDesempates()).containsExactlyElementsOf(desempates);
+    }
+
+    @Test
+    void persisteELeMataMataIdaEVoltaComGolsFora() {
+        Organizacao org = org();
+        List<DesempateMataMata> desempates = List.of(DesempateMataMata.GOLS_FORA, DesempateMataMata.PENALTIS);
+        Campeonato novo = Campeonato.mataMata(org, "Copa", "Futebol", Cenario.slugUnico(),
+                new ConfigMataMataEmbutida(TipoConfronto.IDA_E_VOLTA, null, desempates, Seeding.MANUAL, false));
+        repository.save(novo);
+        em.flush();
+        em.clear();
+
+        Campeonato lido = repository.findByIdAndOrganizacaoId(novo.getId(), org.getId()).orElseThrow();
+
+        assertThat(lido.getConfigMataMata().getTipoConfronto()).isEqualTo(TipoConfronto.IDA_E_VOLTA);
+        assertThat(lido.getConfigMataMata().getSeeding()).isEqualTo(Seeding.MANUAL);
+        assertThat(lido.getConfigMataMata().isDisputaTerceiroLugar()).isFalse();
+        assertThat(lido.getConfigMataMata().getDesempates()).containsExactlyElementsOf(desempates);
     }
 
     @Test

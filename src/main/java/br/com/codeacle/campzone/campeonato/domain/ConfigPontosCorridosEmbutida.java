@@ -5,17 +5,15 @@ import static br.com.codeacle.campzone.common.domain.Invariantes.minimo;
 import static br.com.codeacle.campzone.common.domain.Invariantes.obrigatorio;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
 import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Embeddable;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OrderColumn;
 
@@ -45,13 +43,13 @@ public class ConfigPontosCorridosEmbutida {
     @Column(name = "pc_permite_empate")
     private Boolean permiteEmpate;
 
+    /** Nomes dos {@link CriterioDesempate} em ordem; texto simples para não gerar CHECK de enum. */
     @ElementCollection
     @CollectionTable(name = "campeonato_criterio_desempate",
             joinColumns = @JoinColumn(name = "campeonato_id"))
     @OrderColumn(name = "posicao")
-    @Enumerated(EnumType.STRING)
-    @Column(name = "criterio", nullable = false, length = 30)
-    private List<CriterioDesempate> criteriosDesempate = new ArrayList<>();
+    @Column(name = "criterio", nullable = false, length = 40)
+    private List<String> criteriosDesempate = new ArrayList<>();
 
     protected ConfigPontosCorridosEmbutida() {
     }
@@ -59,15 +57,19 @@ public class ConfigPontosCorridosEmbutida {
     public ConfigPontosCorridosEmbutida(int turnos, int pontosVitoria, int pontosEmpate, int pontosDerrota,
             boolean permiteEmpate, List<CriterioDesempate> criteriosDesempate) {
         this.turnos = minimo(turnos, 1, "Turnos");
+        minimo(pontosDerrota, 0, "Pontos por derrota");
+        exigir(pontosVitoria >= pontosEmpate && pontosEmpate >= pontosDerrota,
+                "Os pontos devem respeitar vitória >= empate >= derrota.");
         this.pontosVitoria = pontosVitoria;
         this.pontosEmpate = pontosEmpate;
         this.pontosDerrota = pontosDerrota;
         this.permiteEmpate = permiteEmpate;
         obrigatorio(criteriosDesempate, "Critérios de desempate");
+        exigir(!criteriosDesempate.isEmpty(), "Informe ao menos um critério de desempate.");
         exigir(criteriosDesempate.stream().noneMatch(Objects::isNull), "Critérios de desempate não aceitam item nulo.");
         exigir(new HashSet<>(criteriosDesempate).size() == criteriosDesempate.size(),
                 "Critérios de desempate não podem se repetir.");
-        this.criteriosDesempate = new ArrayList<>(criteriosDesempate);
+        this.criteriosDesempate = criteriosDesempate.stream().map(Enum::name).collect(Collectors.toCollection(ArrayList::new));
     }
 
     /** Pontuação padrão 3/1/0, empate permitido e critérios na ordem usual de campeonatos. */
@@ -100,6 +102,6 @@ public class ConfigPontosCorridosEmbutida {
 
     /** Critérios na ordem de aplicação (somente leitura). */
     public List<CriterioDesempate> getCriteriosDesempate() {
-        return Collections.unmodifiableList(criteriosDesempate);
+        return criteriosDesempate.stream().map(CriterioDesempate::valueOf).toList();
     }
 }
