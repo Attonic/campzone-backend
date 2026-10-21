@@ -144,6 +144,23 @@ class AuthIntegracaoTest {
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON));
     }
 
+    @Test
+    void senhaComMaisDe72BytesMasMenosDe72CaracteresDevolve400NoCadastroE401NoLogin() throws Exception {
+        String email = emailUnico();
+        String longa = "ç".repeat(40);
+
+        mockMvc.perform(post("/api/v1/public/auth/cadastro").contentType(MediaType.APPLICATION_JSON)
+                .content(json("Org", "Ana", email, longa)))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+                .andExpect(jsonPath("$.erros[?(@.campo=='senha')]").exists());
+
+        MvcResult resultado = login("organizador@campzone.dev", longa);
+        assertThat(resultado.getResponse().getStatus()).isEqualTo(401);
+        assertThat((String) JsonPath.read(resultado.getResponse().getContentAsString(), "$.detail"))
+                .isEqualTo("E-mail ou senha inválidos.");
+    }
+
     // --- Login ---
 
     @Test

@@ -103,6 +103,38 @@ class AuthControllerWebTest {
     }
 
     @Test
+    void cadastroConta72BytesENaoCaracteresNaSenha() throws Exception {
+        // 40 "ç" = 40 caracteres mas 80 bytes em UTF-8: passaria no @Size(max = 72) e estouraria o BCrypt.
+        mockMvc.perform(post("/api/v1/public/auth/cadastro").contentType(MediaType.APPLICATION_JSON)
+                .content("{\"nomeOrganizacao\":\"Org\",\"nome\":\"Ana\",\"email\":\"a@x.com\",\"senha\":\""
+                        + "ç".repeat(40) + "\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+                .andExpect(jsonPath("$.erros[?(@.campo=='senha')]").exists());
+        verifyNoInteractions(authService);
+    }
+
+    @Test
+    void cadastroAceitaSenhaDe36CedilhasEQuePesam72Bytes() throws Exception {
+        when(authService.cadastrar(any())).thenReturn(AUTENTICACAO);
+
+        mockMvc.perform(post("/api/v1/public/auth/cadastro").contentType(MediaType.APPLICATION_JSON)
+                .content("{\"nomeOrganizacao\":\"Org\",\"nome\":\"Ana\",\"email\":\"a@x.com\",\"senha\":\""
+                        + "ç".repeat(36) + "\"}"))
+                .andExpect(status().isCreated());
+    }
+
+    @Test
+    void loginComSenhaLongaNaoTemRegraDeTamanhoNaBorda() throws Exception {
+        when(authService.login(any())).thenThrow(new CredenciaisInvalidasException());
+
+        mockMvc.perform(post("/api/v1/public/auth/login").contentType(MediaType.APPLICATION_JSON)
+                .content("{\"email\":\"a@x.com\",\"senha\":\"" + "ç".repeat(40) + "\"}"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.detail").value("E-mail ou senha inválidos."));
+    }
+
+    @Test
     void cadastroComEmailDuplicadoDevolve409ComDetalheClaro() throws Exception {
         when(authService.cadastrar(any())).thenThrow(new EmailJaCadastradoException());
 

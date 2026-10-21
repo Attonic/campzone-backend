@@ -1,5 +1,7 @@
 package br.com.codeacle.campzone.auth.service.impl;
 
+import java.nio.charset.StandardCharsets;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -27,6 +29,11 @@ import br.com.codeacle.campzone.organizacao.service.OrganizacaoService;
 @Service
 public class AuthServiceImpl implements AuthService {
 
+    /** Limite do BCrypt, em bytes UTF-8. */
+    static final int SENHA_MAXIMO_BYTES = 72;
+
+    private static final String SENHA_DESCARTAVEL = "senha-descartavel-para-igualar-o-tempo";
+
     private static final Logger log = LoggerFactory.getLogger(AuthServiceImpl.class);
 
     private final UsuarioRepository usuarioRepository;
@@ -45,7 +52,7 @@ public class AuthServiceImpl implements AuthService {
         this.tokenService = tokenService;
         this.passwordEncoder = passwordEncoder;
         this.mapper = mapper;
-        this.hashParaIgualarTempo = passwordEncoder.encode("senha-descartavel-para-igualar-o-tempo");
+        this.hashParaIgualarTempo = passwordEncoder.encode(SENHA_DESCARTAVEL);
     }
 
     @Override
@@ -75,6 +82,12 @@ public class AuthServiceImpl implements AuthService {
     @Transactional(readOnly = true)
     public AutenticacaoResponse login(LoginRequest request) {
         Usuario usuario = buscarPorEmail(request.email());
+        if (request.senha().getBytes(StandardCharsets.UTF_8).length > SENHA_MAXIMO_BYTES) {
+            // Nenhuma senha cadastrada passa do limite do BCrypt, que lançaria erro: recusa com o 401 genérico
+            // (sem mensagem própria, para não revelar a regra) gastando o mesmo tempo de uma conferência.
+            passwordEncoder.matches(SENHA_DESCARTAVEL, hashParaIgualarTempo);
+            throw new CredenciaisInvalidasException();
+        }
         String hash = usuario != null ? usuario.getSenhaHash() : hashParaIgualarTempo;
         boolean senhaConfere = passwordEncoder.matches(request.senha(), hash);
         if (usuario == null || !senhaConfere) {

@@ -157,6 +157,20 @@ class AuthServiceImplTest {
     }
 
     @Test
+    void loginComSenhaMaiorQue72BytesVira401SemConsultarOHashDoUsuario() {
+        Usuario usuario = usuarioSalvo("ana@x.com", "hash-guardado");
+        when(usuarioRepository.findByEmail("ana@x.com")).thenReturn(Optional.of(usuario));
+        // "ç" x 40 = 40 caracteres, 80 bytes.
+        String longa = "ç".repeat(40);
+
+        assertThatThrownBy(() -> service.login(new LoginRequest("ana@x.com", longa)))
+                .isInstanceOf(CredenciaisInvalidasException.class);
+
+        verify(passwordEncoder, never()).matches(longa, "hash-guardado");
+        verifyNoInteractions(tokenService);
+    }
+
+    @Test
     void loginComEmailMalformadoVira401EmVezDeErroDeValidacaoDeDominio() {
         assertThatThrownBy(() -> service.login(new LoginRequest("sem-arroba", "qualquer")))
                 .isInstanceOf(CredenciaisInvalidasException.class);

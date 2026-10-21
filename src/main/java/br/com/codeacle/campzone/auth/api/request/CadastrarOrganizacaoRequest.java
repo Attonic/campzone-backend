@@ -1,5 +1,6 @@
 package br.com.codeacle.campzone.auth.api.request;
 
+import br.com.codeacle.campzone.common.validation.TamanhoMaximoBytes;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -20,7 +21,9 @@ public record CadastrarOrganizacaoRequest(
         String email,
 
         @NotBlank(message = "A senha é obrigatória.")
-        @Size(min = 8, max = 72, message = "A senha deve ter entre 8 e 72 caracteres.")
+        @Size(min = 8, message = "A senha deve ter no mínimo 8 caracteres.")
+        // O BCrypt limita a 72 BYTES (não caracteres): "ç" ocupa 2 bytes em UTF-8.
+        @TamanhoMaximoBytes(value = 72, message = "A senha deve ter no máximo 72 bytes (caracteres acentuados contam 2).")
         String senha) {
 
     /** Espaços nas pontas do e-mail (colagem) não devem invalidar nem diferenciar o cadastro. */
