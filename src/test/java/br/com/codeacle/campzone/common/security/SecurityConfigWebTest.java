@@ -7,6 +7,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import org.junit.jupiter.api.Test;
+import jakarta.servlet.DispatcherType;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
@@ -57,5 +58,16 @@ class SecurityConfigWebTest {
         mockMvc.perform(get("/api/v1/privado"))
                 .andExpect(status().isOk())
                 .andExpect(content().string("segredo"));
+    }
+
+    @Test
+    void dispatchDeErroNaoViraUnauthorized() throws Exception {
+        // Simula o dispatch interno do container para /error (ex.: erro numa rota pública).
+        mockMvc.perform(get("/error").with(request -> {
+            request.setDispatcherType(DispatcherType.ERROR);
+            return request;
+        }))
+                .andExpect(result -> org.assertj.core.api.Assertions
+                        .assertThat(result.getResponse().getStatus()).isNotIn(401, 403));
     }
 }
