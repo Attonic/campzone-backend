@@ -1,10 +1,10 @@
+# Configuração comum a todos os perfis. Sem credenciais: elas ficam em application-dev.yml (Docker local)
+# e em variáveis de ambiente (prod). Sem perfil informado, o perfil padrão é o dev.
 spring:
   application:
     name: campzone
-  datasource:
-    url: ${DB_URL:jdbc:postgresql://localhost:5432/campzone}
-    username: ${DB_USER:campzone}
-    password: ${DB_PASSWORD:campzone}
+  profiles:
+    default: dev
   jpa:
     open-in-view: false
     hibernate:

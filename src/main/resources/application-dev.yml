@@ -1,0 +1,11 @@
+# Perfil de desenvolvimento (padrão). Banco do docker-compose.yml na porta 5433.
+# As credenciais abaixo são só do PostgreSQL local do Docker, não são segredo.
+spring:
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5433/campzone}
+    username: ${DB_USER:campzone}
+    password: ${DB_PASSWORD:campzone}
+
+logging:
+  level:
+    br.com.codeacle.campzone: DEBUG
