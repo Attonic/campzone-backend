@@ -1,5 +1,7 @@
 package br.com.codeacle.campzone.auth.seed;
 
+import java.util.Optional;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.ApplicationArguments;
@@ -10,6 +12,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
+import br.com.codeacle.campzone.auth.domain.Papel;
 import br.com.codeacle.campzone.auth.domain.Usuario;
 import br.com.codeacle.campzone.auth.repository.UsuarioRepository;
 import br.com.codeacle.campzone.common.config.SeedOrdem;
@@ -43,7 +46,14 @@ public class AdminSeeder implements ApplicationRunner {
             return;
         }
         String email = Usuario.normalizarEmail(propriedades.email());
-        if (usuarioRepository.existsByEmail(email)) {
+        Optional<Usuario> existente = usuarioRepository.findByEmail(email);
+        if (existente.isPresent()) {
+            if (existente.get().getPapel() != Papel.ADMIN_PLATAFORMA) {
+                // Alguém se cadastrou com o e-mail do admin antes do primeiro start: o admin NÃO foi criado.
+                log.warn("Já existe um usuário com o e-mail configurado em campzone.admin.email e ele não é "
+                        + "{}: o admin da plataforma não foi criado. Verifique o cadastro desse e-mail.",
+                        Papel.ADMIN_PLATAFORMA);
+            }
             return;
         }
         try {

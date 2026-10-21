@@ -3,9 +3,12 @@ package br.com.codeacle.campzone.auth.seed;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.DefaultApplicationArguments;
 import org.springframework.boot.jpa.test.autoconfigure.TestEntityManager;
+import org.springframework.boot.test.system.CapturedOutput;
+import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.security.crypto.factory.PasswordEncoderFactories;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -19,6 +22,7 @@ import br.com.codeacle.campzone.plano.repository.PlanoRepository;
 import br.com.codeacle.campzone.plano.seed.PlanoSeeder;
 import br.com.codeacle.campzone.support.RepositorioTest;
 
+@ExtendWith(OutputCaptureExtension.class)
 @RepositorioTest
 class SeedersTest {
 
@@ -96,6 +100,29 @@ class SeedersTest {
         rodarAdmin(EMAIL_ADMIN, "admin12345");
 
         assertThat(usuarioRepository.findByEmail(EMAIL_ADMIN).orElseThrow().getSenhaHash()).isEqualTo("hash-antigo");
+    }
+
+    @Test
+    void adminSeederAvisaQuandoOEmailDoAdminJaPertenceAUmOrganizador(CapturedOutput saida) {
+        var organizacao = em.persist(new br.com.codeacle.campzone.organizacao.domain.Organizacao("Org",
+                planoRepository.findByCodigo("GRATIS").orElseGet(
+                        () -> em.persist(new br.com.codeacle.campzone.plano.domain.Plano("GRATIS", "Grátis", 1, 8)))));
+        em.persist(Usuario.organizador("Intruso", EMAIL_ADMIN, "hash-intruso", organizacao));
+        em.flush();
+        em.clear();
+
+        rodarAdmin(EMAIL_ADMIN, "admin12345");
+
+        assertThat(saida.getAll()).contains("o admin da plataforma não foi criado");
+        assertThat(usuarioRepository.findByEmail(EMAIL_ADMIN).orElseThrow().getPapel()).isEqualTo(Papel.ORGANIZADOR);
+    }
+
+    @Test
+    void adminSeederNaoAvisaQuandoOAdminJaExiste(CapturedOutput saida) {
+        rodarAdmin(EMAIL_ADMIN, "admin12345");
+        rodarAdmin(EMAIL_ADMIN, "admin12345");
+
+        assertThat(saida.getAll()).doesNotContain("o admin da plataforma não foi criado");
     }
 
     @Test

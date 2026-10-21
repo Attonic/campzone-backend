@@ -104,7 +104,7 @@ class PerfisConfiguracaoTest {
     void aplicacaoRealEmProdComDbUrlVazioCitaApenasDbUrl() {
         assertThatThrownBy(() -> construtor(CampzoneApplication.class, "spring.profiles.active=prod",
                 "DB_URL=", "DB_USER=u", "DB_PASSWORD=p", "JWT_SECRET=" + SEGREDO, "ADMIN_EMAIL=a@x.com",
-                "ADMIN_SENHA=senha-admin").run())
+                "ADMIN_SENHA=senha-admin-forte").run())
                 .hasStackTraceContaining("ausentes ou vazias: DB_URL. Defina");
     }
 
@@ -119,7 +119,7 @@ class PerfisConfiguracaoTest {
     void prodSemApenasOJwtSecretCitaSoEle() {
         assertThatThrownBy(() -> construtor(CampzoneApplication.class, "spring.profiles.active=prod",
                 "DB_URL=jdbc:postgresql://db:5432/x", "DB_USER=u", "DB_PASSWORD=p", "ADMIN_EMAIL=a@x.com",
-                "ADMIN_SENHA=senha-admin").run())
+                "ADMIN_SENHA=senha-admin-forte").run())
                 .hasStackTraceContaining("ausentes ou vazias: JWT_SECRET. Defina");
     }
 
@@ -127,8 +127,16 @@ class PerfisConfiguracaoTest {
     void prodComJwtSecretCurtoNaoSobe() {
         assertThatThrownBy(() -> construtor(CampzoneApplication.class, "spring.profiles.active=prod",
                 "DB_URL=jdbc:postgresql://db:5432/x", "DB_USER=u", "DB_PASSWORD=p", "JWT_SECRET=curto",
-                "ADMIN_EMAIL=a@x.com", "ADMIN_SENHA=senha-admin").run())
+                "ADMIN_EMAIL=a@x.com", "ADMIN_SENHA=senha-admin-forte").run())
                 .hasStackTraceContaining("JWT_SECRET deve ter no mínimo 32 bytes");
+    }
+
+    @Test
+    void prodComSenhaDeAdminCurtaNaoSobe() {
+        assertThatThrownBy(() -> construtor(CampzoneApplication.class, "spring.profiles.active=prod",
+                "DB_URL=jdbc:postgresql://db:5432/x", "DB_USER=u", "DB_PASSWORD=p", "JWT_SECRET=" + SEGREDO,
+                "ADMIN_EMAIL=a@x.com", "ADMIN_SENHA=curta-11-ch").run())
+                .hasStackTraceContaining("ADMIN_SENHA deve ter no mínimo 12 caracteres");
     }
 
     @Test

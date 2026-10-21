@@ -15,7 +15,7 @@ import br.com.codeacle.campzone.common.security.JwtProperties;
 /**
  * Falha rápida e com mensagem clara no perfil {@code prod} quando faltam as variáveis obrigatórias: banco
  * ({@code DB_*}), segredo do JWT ({@code JWT_SECRET}, mínimo 32 bytes) e credenciais do admin da plataforma
- * ({@code ADMIN_EMAIL}, {@code ADMIN_SENHA}). Roda antes da criação de qualquer bean, evitando erros obscuros
+ * ({@code ADMIN_EMAIL}, {@code ADMIN_SENHA}, mínimo 12 caracteres). Roda antes da criação de qualquer bean, evitando erros obscuros
  * (pool de conexões com a URL não resolvida, placeholder sem valor). A checagem do banco exige {@code DB_URL},
  * {@code DB_USER} e {@code DB_PASSWORD} de propósito: {@code SPRING_DATASOURCE_*} sozinhas não bastam, porque o
  * {@code application-prod.yml} só lê as variáveis {@code DB_*}.
@@ -26,6 +26,8 @@ public class VariaveisObrigatoriasProd implements BeanFactoryPostProcessor, Envi
 
     static final List<String> OBRIGATORIAS = List.of("DB_URL", "DB_USER", "DB_PASSWORD", "JWT_SECRET",
             "ADMIN_EMAIL", "ADMIN_SENHA");
+
+    static final int TAMANHO_MINIMO_SENHA_ADMIN = 12;
 
     private Environment environment;
 
@@ -40,6 +42,11 @@ public class VariaveisObrigatoriasProd implements BeanFactoryPostProcessor, Envi
         if (!ausentes.isEmpty()) {
             throw new IllegalStateException("Perfil prod: variáveis de ambiente obrigatórias ausentes ou vazias: "
                     + String.join(", ", ausentes) + ". Defina-as antes de iniciar a aplicação.");
+        }
+        String senhaAdmin = environment.getProperty("ADMIN_SENHA");
+        if (senhaAdmin.length() < TAMANHO_MINIMO_SENHA_ADMIN) {
+            throw new IllegalStateException("Perfil prod: ADMIN_SENHA deve ter no mínimo "
+                    + TAMANHO_MINIMO_SENHA_ADMIN + " caracteres.");
         }
         String segredo = environment.getProperty("JWT_SECRET");
         if (segredo.getBytes(StandardCharsets.UTF_8).length < JwtProperties.TAMANHO_MINIMO_SEGREDO_BYTES) {
