@@ -37,7 +37,28 @@ PostgreSQL do `docker-compose.yml` em `localhost:5433` (usuário, senha e banco 
    ```
 
    A API fica em `http://localhost:8080`. Rotas públicas ficam em `/api/v1/public/**`; qualquer outra rota
-   exige autenticação (responde 401 até a tarefa de JWT). Erros saem como `ProblemDetail` (RFC 9457).
+   exige um JWT (veja "Autenticação" abaixo). Erros saem como `ProblemDetail` (RFC 9457).
+
+### Autenticação e contas de desenvolvimento
+
+Login e cadastro são públicos (`POST /api/v1/public/auth/login` e `/api/v1/public/auth/cadastro`) e devolvem um JWT
+(`Authorization: Bearer <token>`, validade padrão de 8 horas, sem refresh token). `GET /api/v1/auth/me` devolve o
+usuário do token. Há dois papéis (ADR 0002): `ADMIN_PLATAFORMA` (só `/api/v1/admin/**`, sem organização) e
+`ORGANIZADOR` (rotas da própria organização).
+
+Em `dev`, a aplicação cria no primeiro start (idempotente) estas contas, definidas em `application-dev.yml`. Elas
+**só existem em dev e não são segredo**:
+
+| Conta | E-mail | Senha | Papel |
+|---|---|---|---|
+| Admin da plataforma | `admin@campzone.dev` | `admin12345` | `ADMIN_PLATAFORMA` |
+| Organizador demo (org "Organização Demo", plano `GRATIS`) | `organizador@campzone.dev` | `organizador123` | `ORGANIZADOR` |
+
+```bash
+TOKEN=$(curl -s -X POST localhost:8080/api/v1/public/auth/login -H 'Content-Type: application/json' \
+  -d '{"email":"organizador@campzone.dev","senha":"organizador123"}' | jq -r .token)
+curl -s localhost:8080/api/v1/auth/me -H "Authorization: Bearer $TOKEN"
+```
 
 Para parar o banco: `docker compose down` (acrescente `-v` para apagar os dados).
 
@@ -62,16 +83,20 @@ aplicação não sobe e informa quais faltam:
 | `DB_URL` | URL JDBC, ex.: `jdbc:postgresql://host:5432/campzone` |
 | `DB_USER` | usuário do banco |
 | `DB_PASSWORD` | senha do banco |
+| `JWT_SECRET` | segredo HMAC-SHA256 do JWT, mínimo 32 bytes (gere com `openssl rand -base64 48`) |
+| `ADMIN_EMAIL` | e-mail do admin da plataforma, criado no primeiro start se não existir |
+| `ADMIN_SENHA` | senha inicial do admin (nunca é sobrescrita depois de criado) |
 
 As três `DB_*` são exigidas de propósito: definir só `SPRING_DATASOURCE_*` não basta, porque o
 `application-prod.yml` lê apenas as variáveis `DB_*`.
 
-Opcionais: `PORT` (padrão 8080), `DB_POOL_MAX_SIZE` (padrão 10), `DB_POOL_MIN_IDLE` (padrão 2).
+Opcionais: `PORT` (padrão 8080), `DB_POOL_MAX_SIZE` (padrão 10), `DB_POOL_MIN_IDLE` (padrão 2). A validade do token
+(`campzone.jwt.expiracao`, padrão `PT8H`) pode ser ajustada por propriedade.
 
 ```bash
 ./mvnw -DskipTests package
 SPRING_PROFILES_ACTIVE=prod DB_URL=jdbc:postgresql://host:5432/campzone DB_USER=... DB_PASSWORD=... \
-  java -jar target/campzone-0.0.1-SNAPSHOT.jar
+  JWT_SECRET=... ADMIN_EMAIL=... ADMIN_SENHA=... java -jar target/campzone-0.0.1-SNAPSHOT.jar
 ```
 
 Em prod o log é INFO, `show-sql` fica desligado e as respostas de erro não incluem mensagem nem stacktrace.
