@@ -63,6 +63,9 @@ aplicação não sobe e informa quais faltam:
 | `DB_USER` | usuário do banco |
 | `DB_PASSWORD` | senha do banco |
 
+As três `DB_*` são exigidas de propósito: definir só `SPRING_DATASOURCE_*` não basta, porque o
+`application-prod.yml` lê apenas as variáveis `DB_*`.
+
 Opcionais: `PORT` (padrão 8080), `DB_POOL_MAX_SIZE` (padrão 10), `DB_POOL_MIN_IDLE` (padrão 2).
 
 ```bash
@@ -83,7 +86,8 @@ O schema é gerado pelo Hibernate (`ddl-auto=update`); não há migrations. Nenh
 ./mvnw verify
 ```
 
-Inclui `contextLoads` com Testcontainers (PostgreSQL), então o Docker precisa estar rodando.
+Os testes usam Testcontainers (um PostgreSQL descartável), não o banco do `docker-compose.yml`; por isso o Docker
+precisa estar rodando, mas o compose não. Os testes de perfis ignoram variáveis de ambiente como `DB_URL`.
 
 ## CI
 

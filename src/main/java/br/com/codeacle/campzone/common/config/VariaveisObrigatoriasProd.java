@@ -12,6 +12,8 @@ import org.springframework.stereotype.Component;
 /**
  * Falha rápida e com mensagem clara no perfil {@code prod} quando faltam as variáveis do banco. Roda antes da
  * criação de qualquer bean, evitando o erro obscuro do pool de conexões com a URL não resolvida.
+ * A checagem exige {@code DB_URL}, {@code DB_USER} e {@code DB_PASSWORD} de propósito: {@code SPRING_DATASOURCE_*}
+ * sozinhas não bastam, porque o {@code application-prod.yml} só lê as variáveis {@code DB_*}.
  */
 @Component
 @Profile("prod")
