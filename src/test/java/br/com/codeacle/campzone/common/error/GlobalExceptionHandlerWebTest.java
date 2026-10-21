@@ -17,12 +17,12 @@ import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 
-import br.com.codeacle.campzone.common.ApiTesteController;
+import br.com.codeacle.testes.ApiTesteController;
 import br.com.codeacle.campzone.common.security.SecurityConfig;
 
 @ExtendWith(OutputCaptureExtension.class)
 @WebMvcTest(ApiTesteController.class)
-@Import({ SecurityConfig.class, GlobalExceptionHandler.class })
+@Import({ ApiTesteController.class, SecurityConfig.class, GlobalExceptionHandler.class })
 class GlobalExceptionHandlerWebTest {
 
     @Autowired

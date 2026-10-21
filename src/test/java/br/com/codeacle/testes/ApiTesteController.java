@@ -1,4 +1,4 @@
-package br.com.codeacle.campzone.common;
+package br.com.codeacle.testes;
 
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -9,7 +9,12 @@ import org.springframework.web.bind.annotation.RestController;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 
-/** Controller só de teste: exercita o advice e a SecurityConfig sem depender de módulos de negócio. */
+/**
+ * Controller só de teste: exercita o advice e a SecurityConfig sem depender de módulos de negócio. Fica fora do
+ * pacote base {@code br.com.codeacle.campzone} de propósito: assim o component scan da aplicação (inclusive em
+ * {@code @SpringBootTest} e no {@code TestCampzoneApplication}) nunca o registra. Os web tests o importam
+ * explicitamente com {@code @Import}.
+ */
 @RestController
 @RequestMapping("/api/v1")
 public class ApiTesteController {
