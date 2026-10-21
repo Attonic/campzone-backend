@@ -1,4 +1,4 @@
-# Copie para application-local.yml (ignorado pelo git) e ajuste se precisar.
+# Copie para config/application-local.yml (ignorado pelo git; o Spring Boot lê ./config/ por padrão) e ajuste se precisar.
 # Os valores abaixo batem com o docker-compose.yml / .env.example.
 spring:
   datasource:

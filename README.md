@@ -31,10 +31,11 @@ Regras de arquitetura e padrões: veja `CLAUDE.md`.
    docker compose ps   # aguarde "healthy"
    ```
 
-3. Crie o perfil local copiando o exemplo (`application-local.yml` é ignorado pelo git):
+3. Crie o perfil local copiando o exemplo. O Spring Boot lê `./config/` do diretório de execução, e o
+   `application-local.yml` é ignorado pelo git (e fica fora do jar):
 
    ```bash
-   cp src/main/resources/application-local.example.yml src/main/resources/application-local.yml
+   cp config/application-local.example.yml config/application-local.yml
    ```
 
 4. Suba a aplicação com o perfil `local`:
@@ -46,8 +47,8 @@ Regras de arquitetura e padrões: veja `CLAUDE.md`.
    A API fica em `http://localhost:8080`. Rotas públicas ficam em `/api/v1/public/**`; qualquer outra rota
    exige autenticação (responde 401 até a tarefa de JWT). Erros saem como `ProblemDetail` (RFC 9457).
 
-Se a porta 5432 já estiver em uso na máquina, defina `POSTGRES_PORT=5433` no `.env` e rode a aplicação com
-`DB_URL=jdbc:postgresql://localhost:5433/campzone`.
+Se a porta 5432 já estiver em uso na máquina, defina `POSTGRES_PORT=5433` no `.env` e ajuste a `url` em `config/application-local.yml` (ou rode com
+`DB_URL=jdbc:postgresql://localhost:5433/campzone`).
 
 Para parar: `docker compose down` (acrescente `-v` para apagar os dados).
 
@@ -67,4 +68,4 @@ Inclui `contextLoads` com Testcontainers (PostgreSQL), então o Docker precisa e
 
 ## CI
 
-`.github/workflows/ci.yml` roda `./mvnw -B verify` com Temurin 21 em todo push e pull request.
+`.github/workflows/ci.yml` roda `./mvnw -B verify` com Temurin 21 em pull requests e em push na `main`.
