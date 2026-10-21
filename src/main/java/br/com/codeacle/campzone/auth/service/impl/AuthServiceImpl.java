@@ -5,7 +5,6 @@ import java.nio.charset.StandardCharsets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,6 +16,7 @@ import br.com.codeacle.campzone.auth.api.response.UsuarioResponse;
 import br.com.codeacle.campzone.auth.domain.Usuario;
 import br.com.codeacle.campzone.auth.exception.CredenciaisInvalidasException;
 import br.com.codeacle.campzone.auth.exception.EmailJaCadastradoException;
+import br.com.codeacle.campzone.auth.exception.TokenDeUsuarioInexistenteException;
 import br.com.codeacle.campzone.auth.mapper.UsuarioMapper;
 import br.com.codeacle.campzone.auth.repository.UsuarioRepository;
 import br.com.codeacle.campzone.auth.service.AuthService;
@@ -101,7 +101,7 @@ public class AuthServiceImpl implements AuthService {
     public UsuarioResponse buscarUsuario(Long usuarioId) {
         // Token válido de usuário que não existe mais: não autenticado (401).
         Usuario usuario = usuarioRepository.findById(usuarioId)
-                .orElseThrow(() -> new BadCredentialsException("Usuário do token não existe."));
+                .orElseThrow(TokenDeUsuarioInexistenteException::new);
         return mapper.toResponse(usuario);
     }
 

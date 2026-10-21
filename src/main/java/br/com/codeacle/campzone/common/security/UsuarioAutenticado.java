@@ -1,6 +1,7 @@
 package br.com.codeacle.campzone.common.security;
 
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
@@ -22,7 +23,8 @@ public record UsuarioAutenticado(Long id, Long organizacaoId) {
         Jwt jwt = token.getToken();
         Long id = comoLong(jwt.getSubject());
         if (id == null) {
-            throw new AccessDeniedException("Token sem identificação de usuário.");
+            // Token assinado mas sem identificação de usuário utilizável: não é um token nosso válido (401).
+            throw new BadCredentialsException("Token sem identificação de usuário.");
         }
         return new UsuarioAutenticado(id, comoLong(jwt.getClaim(TokenClaims.ORGANIZACAO)));
     }

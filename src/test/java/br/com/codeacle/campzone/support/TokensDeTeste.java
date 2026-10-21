@@ -50,6 +50,20 @@ public final class TokensDeTeste {
                 .getTokenValue();
     }
 
+    /** Token de organizador válido, mas com o {@code sub} informado (para testar subs inválidos). */
+    public static String tokenComSub(String segredo, String sub, Instant expiraEm) {
+        JwtClaimsSet claims = JwtClaimsSet.builder().subject(sub).issuedAt(Instant.now()).expiresAt(expiraEm)
+                .claim("papel", "ORGANIZADOR").claim("org", 1L).build();
+        return codificar(segredo, claims);
+    }
+
+    private static String codificar(String segredo, JwtClaimsSet claims) {
+        var encoder = NimbusJwtEncoder.withSecretKey(new SecretKeySpec(segredo.getBytes(StandardCharsets.UTF_8),
+                "HmacSHA256")).algorithm(MacAlgorithm.HS256).build();
+        return encoder.encode(JwtEncoderParameters.from(JwsHeader.with(MacAlgorithm.HS256).build(), claims))
+                .getTokenValue();
+    }
+
     public static String tokenValido(String papel, Long organizacaoId) {
         Instant agora = Instant.now();
         return token(SEGREDO, agora, agora.plus(Duration.ofHours(1)), 1L, papel, organizacaoId);

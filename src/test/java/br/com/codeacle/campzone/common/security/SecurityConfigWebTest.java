@@ -137,6 +137,16 @@ class SecurityConfigWebTest {
     }
 
     @Test
+    void tokenComSubNaoNumericoDevolve401NaoOs403() throws Exception {
+        java.time.Instant agora = java.time.Instant.now();
+        String token = TokensDeTeste.tokenComSub(TokensDeTeste.SEGREDO, "nao-e-numero", agora.plusSeconds(600));
+
+        mockMvc.perform(get("/api/v1/teste/organizacao-atual").header(HttpHeaders.AUTHORIZATION, bearer(token)))
+                .andExpect(status().isUnauthorized())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON));
+    }
+
+    @Test
     void organizacaoAtualPrimitivaTambemVemDoTokenEIgnoraAQuery() throws Exception {
         mockMvc.perform(get("/api/v1/teste/organizacao-atual-primitivo?organizacaoId=99").with(organizador(1, 10)))
                 .andExpect(status().isOk())

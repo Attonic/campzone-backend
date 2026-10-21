@@ -211,10 +211,11 @@ class AuthControllerWebTest {
     @Test
     void meDeUsuarioQueNaoExisteMaisDevolve401() throws Exception {
         when(authService.buscarUsuario(9L))
-                .thenThrow(new org.springframework.security.authentication.BadCredentialsException("sumiu"));
+                .thenThrow(new br.com.codeacle.campzone.auth.exception.TokenDeUsuarioInexistenteException());
 
         mockMvc.perform(get("/api/v1/auth/me").with(organizador(9, 5)))
                 .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.detail").value("Token inválido ou expirado."))
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON));
     }
 }

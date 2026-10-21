@@ -17,7 +17,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.util.ReflectionTestUtils;
 
@@ -29,6 +28,7 @@ import br.com.codeacle.campzone.auth.domain.Papel;
 import br.com.codeacle.campzone.auth.domain.Usuario;
 import br.com.codeacle.campzone.auth.exception.CredenciaisInvalidasException;
 import br.com.codeacle.campzone.auth.exception.EmailJaCadastradoException;
+import br.com.codeacle.campzone.auth.exception.TokenDeUsuarioInexistenteException;
 import br.com.codeacle.campzone.auth.mapper.UsuarioMapper;
 import br.com.codeacle.campzone.auth.repository.UsuarioRepository;
 import br.com.codeacle.campzone.auth.service.TokenEmitido;
@@ -206,6 +206,6 @@ class AuthServiceImplTest {
     void buscarUsuarioInexistenteNaoAutentica() {
         when(usuarioRepository.findById(404L)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> service.buscarUsuario(404L)).isInstanceOf(BadCredentialsException.class);
+        assertThatThrownBy(() -> service.buscarUsuario(404L)).isInstanceOf(TokenDeUsuarioInexistenteException.class);
     }
 }
