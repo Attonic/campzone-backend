@@ -3,12 +3,17 @@ package br.com.codeacle.campzone.config;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.WebApplicationType;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
+import org.springframework.core.env.MapPropertySource;
+import org.springframework.core.env.StandardEnvironment;
 
 import br.com.codeacle.campzone.CampzoneApplication;
 
@@ -22,15 +27,32 @@ class PerfisConfiguracaoTest {
     static class ConfiguracaoVazia {
     }
 
-    private SpringApplicationBuilder construtor(String... propriedades) {
-        return new SpringApplicationBuilder(ConfiguracaoVazia.class)
+    /**
+     * Monta a aplicação isolada do ambiente de quem roda: remove variáveis de ambiente e system properties
+     * (DB_URL, SPRING_PROFILES_ACTIVE...) e injeta as propriedades do teste com a maior precedência.
+     */
+    private SpringApplicationBuilder construtor(Class<?> fonte, String... propriedades) {
+        StandardEnvironment env = new StandardEnvironment();
+        env.getPropertySources().remove(StandardEnvironment.SYSTEM_ENVIRONMENT_PROPERTY_SOURCE_NAME);
+        env.getPropertySources().remove(StandardEnvironment.SYSTEM_PROPERTIES_PROPERTY_SOURCE_NAME);
+        Map<String, Object> mapa = new HashMap<>();
+        for (String propriedade : propriedades) {
+            int separador = propriedade.indexOf('=');
+            mapa.put(propriedade.substring(0, separador), propriedade.substring(separador + 1));
+        }
+        env.getPropertySources().addFirst(new MapPropertySource("propriedadesDoTeste", mapa));
+        return new SpringApplicationBuilder(fonte)
                 .web(WebApplicationType.NONE)
-                .properties(propriedades);
+                .environment(env);
+    }
+
+    private SpringApplicationBuilder construtor(String... propriedades) {
+        return construtor(ConfiguracaoVazia.class, propriedades);
     }
 
     @Test
     void semPerfilInformadoOPadraoEODev() {
-        try (ConfigurableApplicationContext contexto = construtor("spring.profiles.active=").run()) {
+        try (ConfigurableApplicationContext contexto = construtor().run()) {
             Environment env = contexto.getEnvironment();
             assertThat(env.getDefaultProfiles()).contains("dev");
             assertThat(env.getProperty("spring.datasource.url")).isEqualTo("jdbc:postgresql://localhost:5433/campzone");
@@ -69,11 +91,21 @@ class PerfisConfiguracaoTest {
 
     @Test
     void aplicacaoRealEmProdSemVariaveisDoBancoNaoSobe() {
-        assertThatThrownBy(() -> new SpringApplicationBuilder(CampzoneApplication.class)
-                .web(WebApplicationType.NONE)
-                .properties("spring.profiles.active=prod")
-                .run())
+        assertThatThrownBy(() -> construtor(CampzoneApplication.class, "spring.profiles.active=prod").run())
                 .hasStackTraceContaining("variáveis de ambiente obrigatórias ausentes")
+                .hasStackTraceContaining("DB_URL, DB_USER, DB_PASSWORD");
+    }
+
+    @Test
+    void aplicacaoRealEmProdComDbUrlVazioCitaApenasDbUrl() {
+        assertThatThrownBy(() -> construtor(CampzoneApplication.class, "spring.profiles.active=prod",
+                "DB_URL=", "DB_USER=u", "DB_PASSWORD=p").run())
+                .hasStackTraceContaining("ausentes ou vazias: DB_URL. Defina");
+    }
+
+    @Test
+    void aplicacaoRealComProdEOutroPerfilSemVariaveisNaoSobe() {
+        assertThatThrownBy(() -> construtor(CampzoneApplication.class, "spring.profiles.active=prod,algo").run())
                 .hasStackTraceContaining("DB_URL, DB_USER, DB_PASSWORD");
     }
 }
