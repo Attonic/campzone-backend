@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 
 import br.com.codeacle.campzone.common.ApiTesteController;
@@ -56,5 +57,39 @@ class GlobalExceptionHandlerWebTest {
                 .andExpect(status().isNotFound())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
                 .andExpect(jsonPath("$.status").value(404));
+    }
+
+    @Test
+    void accessDeniedAnonimoVira401EmVezDe500() throws Exception {
+        mockMvc.perform(get("/api/v1/public/acesso-negado"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+                .andExpect(jsonPath("$.status").value(401));
+    }
+
+    @Test
+    @WithMockUser
+    void accessDeniedAutenticadoVira403EmVezDe500() throws Exception {
+        mockMvc.perform(get("/api/v1/public/acesso-negado"))
+                .andExpect(status().isForbidden())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+                .andExpect(jsonPath("$.status").value(403));
+    }
+
+    @Test
+    void authenticationExceptionVira401EmVezDe500() throws Exception {
+        mockMvc.perform(get("/api/v1/public/nao-autenticado"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+                .andExpect(jsonPath("$.status").value(401));
+    }
+
+    @Test
+    void excecaoComResponseStatusMantemOStatusDeclarado() throws Exception {
+        mockMvc.perform(get("/api/v1/public/conflito"))
+                .andExpect(status().isConflict())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+                .andExpect(jsonPath("$.status").value(409))
+                .andExpect(jsonPath("$.detail").value("Recurso em conflito"));
     }
 }

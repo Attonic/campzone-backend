@@ -36,4 +36,24 @@ public class ApiTesteController {
     String privado() {
         return "segredo";
     }
+
+    @GetMapping("/public/acesso-negado")
+    String acessoNegado() {
+        throw new org.springframework.security.access.AccessDeniedException("negado");
+    }
+
+    @GetMapping("/public/nao-autenticado")
+    String naoAutenticado() {
+        throw new org.springframework.security.authentication.BadCredentialsException("credenciais");
+    }
+
+    @GetMapping("/public/conflito")
+    String conflito() {
+        throw new ConflitoAnotadoException();
+    }
+
+    @org.springframework.web.bind.annotation.ResponseStatus(code = org.springframework.http.HttpStatus.CONFLICT,
+            reason = "Recurso em conflito")
+    static class ConflitoAnotadoException extends RuntimeException {
+    }
 }
