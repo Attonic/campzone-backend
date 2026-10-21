@@ -1,7 +1,5 @@
 target/
 *.class
-application-local.yml
-application-local.properties
 .env
 .env.*
 !.env.example
