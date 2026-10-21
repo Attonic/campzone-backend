@@ -1,8 +1,10 @@
 package br.com.codeacle.campzone.partida.domain;
 
+import static br.com.codeacle.campzone.common.domain.Invariantes.exigir;
 import static br.com.codeacle.campzone.common.domain.Invariantes.minimo;
 import static br.com.codeacle.campzone.common.domain.Invariantes.obrigatorio;
 
+import br.com.codeacle.campzone.campeonato.domain.FormatoCampeonato;
 import br.com.codeacle.campzone.organizacao.domain.Organizacao;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -44,6 +46,8 @@ public class Rodada {
     /** A organização é herdada da fase. */
     public Rodada(Fase fase, int numero) {
         this.fase = obrigatorio(fase, "Fase");
+        exigir(fase.getCampeonato().getFormato() == FormatoCampeonato.PONTOS_CORRIDOS,
+                "Rodadas só existem em campeonatos de pontos corridos.");
         this.organizacao = fase.getOrganizacao();
         this.numero = minimo(numero, 1, "Número da rodada");
     }

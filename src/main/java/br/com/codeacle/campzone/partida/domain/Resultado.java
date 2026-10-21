@@ -63,7 +63,7 @@ public class Resultado {
     private Instant registradoEm;
 
     @Version
-    private long version;
+    private Long version;
 
     protected Resultado() {
     }
@@ -133,7 +133,7 @@ public class Resultado {
         return registradoEm;
     }
 
-    public long getVersion() {
+    public Long getVersion() {
         return version;
     }
 }

@@ -6,12 +6,12 @@ import static br.com.codeacle.campzone.common.domain.Invariantes.obrigatorio;
 
 import java.time.Instant;
 
+import org.hibernate.annotations.Check;
+
 import br.com.codeacle.campzone.organizacao.domain.Organizacao;
 import br.com.codeacle.campzone.participante.domain.Participante;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -28,6 +28,7 @@ import jakarta.persistence.Version;
  * (mata-mata), nunca aos dois. O resultado vive em {@link Resultado}, criado depois.
  */
 @Entity
+@Check(name = "ck_partida_rodada_xor_confronto", constraints = "(rodada_id IS NULL) <> (confronto_id IS NULL)")
 @Table(name = "partida",
         uniqueConstraints = @UniqueConstraint(name = "uk_partida_confronto_numero_jogo",
                 columnNames = { "confronto_id", "numero_jogo" }),
@@ -72,15 +73,15 @@ public class Partida {
     @JoinColumn(name = "visitante_id", nullable = false)
     private Participante visitante;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 20)
-    private StatusPartida status;
+    /** Nome do {@link StatusPartida}; texto simples para não gerar CHECK de enum (veja {@code Campeonato.formato}). */
+    @Column(nullable = false, length = 40)
+    private String status;
 
     @Column(name = "data_hora")
     private Instant dataHora;
 
     @Version
-    private long version;
+    private Long version;
 
     protected Partida() {
     }
@@ -88,6 +89,10 @@ public class Partida {
     private Partida(Fase fase, Rodada rodada, Confronto confronto, int numeroJogo, Participante mandante,
             Participante visitante) {
         this.fase = obrigatorio(fase, "Fase");
+        obrigatorio(mandante, "Mandante");
+        obrigatorio(visitante, "Visitante");
+        exigir(mandante.pertenceAo(fase.getCampeonato()) && visitante.pertenceAo(fase.getCampeonato()),
+                "Mandante e visitante devem pertencer ao campeonato da fase.");
         this.organizacao = fase.getOrganizacao();
         exigir((rodada == null) != (confronto == null), "A partida pertence a uma rodada ou a um confronto, não aos dois.");
         this.rodada = rodada;
@@ -95,8 +100,8 @@ public class Partida {
         this.numeroJogo = minimo(numeroJogo, 1, "Número do jogo");
         this.mandante = obrigatorio(mandante, "Mandante");
         this.visitante = obrigatorio(visitante, "Visitante");
-        exigir(!mandante.mesmoQue(visitante), "Mandante e visitante devem ser participantes diferentes.");
-        this.status = StatusPartida.AGENDADA;
+        exigir(!Participante.mesmo(mandante, visitante), "Mandante e visitante devem ser participantes diferentes.");
+        this.status = StatusPartida.AGENDADA.name();
     }
 
     /** Partida de pontos corridos. */
@@ -109,17 +114,25 @@ public class Partida {
     public static Partida doConfronto(Confronto confronto, int numeroJogo, Participante mandante,
             Participante visitante) {
         obrigatorio(confronto, "Confronto");
+        obrigatorio(mandante, "Mandante");
+        obrigatorio(visitante, "Visitante");
+        exigir(!confronto.isBye(), "Um confronto bye não tem partidas.");
+        boolean mandoNormal = Participante.mesmo(mandante, confronto.getParticipanteA())
+                && Participante.mesmo(visitante, confronto.getParticipanteB());
+        boolean mandoInvertido = Participante.mesmo(mandante, confronto.getParticipanteB())
+                && Participante.mesmo(visitante, confronto.getParticipanteA());
+        exigir(mandoNormal || mandoInvertido, "Mandante e visitante devem ser os participantes do confronto.");
         return new Partida(confronto.getFase(), null, confronto, numeroJogo, mandante, visitante);
     }
 
     public void agendar(Instant dataHora) {
-        exigir(status == StatusPartida.AGENDADA, "Não é possível reagendar uma partida encerrada.");
+        exigir(getStatus() == StatusPartida.AGENDADA, "Não é possível reagendar uma partida encerrada.");
         this.dataHora = dataHora;
     }
 
     public void encerrar() {
-        exigir(status == StatusPartida.AGENDADA, "A partida já está encerrada.");
-        this.status = StatusPartida.ENCERRADA;
+        exigir(getStatus() == StatusPartida.AGENDADA, "A partida já está encerrada.");
+        this.status = StatusPartida.ENCERRADA.name();
     }
 
     public Long getId() {
@@ -155,14 +168,14 @@ public class Partida {
     }
 
     public StatusPartida getStatus() {
-        return status;
+        return StatusPartida.valueOf(status);
     }
 
     public Instant getDataHora() {
         return dataHora;
     }
 
-    public long getVersion() {
+    public Long getVersion() {
         return version;
     }
 }

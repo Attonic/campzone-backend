@@ -67,17 +67,23 @@ public class Participante {
     }
 
     /**
-     * Identidade lógica: mesma instância ou mesmo id (cobre proxies LAZY do Hibernate, que não são a mesma
-     * instância do objeto carregado).
+     * Identidade lógica: mesma instância ou mesmo id. Usa só {@code getId()}, que não inicializa proxies LAZY do
+     * Hibernate (e cobre proxy contra instância carregada).
      */
-    public boolean mesmoQue(Participante outro) {
-        if (outro == null) {
+    public static boolean mesmo(Participante a, Participante b) {
+        if (a == null || b == null) {
             return false;
         }
-        if (this == outro) {
-            return true;
+        return a == b || (a.getId() != null && a.getId().equals(b.getId()));
+    }
+
+    /** Verdadeiro se o participante pertence ao campeonato informado (por instância ou id, sem inicializar proxy). */
+    public boolean pertenceAo(Campeonato outro) {
+        Campeonato meu = getCampeonato();
+        if (meu == null || outro == null) {
+            return false;
         }
-        return getId() != null && getId().equals(outro.getId());
+        return meu == outro || (meu.getId() != null && meu.getId().equals(outro.getId()));
     }
 
     private static Integer validarSeed(Integer seed) {

@@ -9,8 +9,6 @@ import br.com.codeacle.campzone.campeonato.domain.Campeonato;
 import br.com.codeacle.campzone.organizacao.domain.Organizacao;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -20,6 +18,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
+import jakarta.persistence.Version;
 
 /** Fase do campeonato (ex.: "Fase única" nos pontos corridos; "Semifinal" no mata-mata). */
 @Entity
@@ -47,9 +46,12 @@ public class Fase {
     @Column(nullable = false)
     private int ordem;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 20)
-    private StatusFase status;
+    /** Nome do {@link StatusFase}; texto simples para não gerar CHECK de enum (veja {@code Campeonato.formato}). */
+    @Column(nullable = false, length = 40)
+    private String status;
+
+    @Version
+    private Long version;
 
     protected Fase() {
     }
@@ -60,17 +62,17 @@ public class Fase {
         this.organizacao = campeonato.getOrganizacao();
         this.nome = textoObrigatorio(nome, "Nome da fase", 80);
         this.ordem = minimo(ordem, 1, "Ordem da fase");
-        this.status = StatusFase.PENDENTE;
+        this.status = StatusFase.PENDENTE.name();
     }
 
     public void iniciar() {
-        exigir(status == StatusFase.PENDENTE, "Só é possível iniciar uma fase pendente.");
-        this.status = StatusFase.EM_ANDAMENTO;
+        exigir(getStatus() == StatusFase.PENDENTE, "Só é possível iniciar uma fase pendente.");
+        this.status = StatusFase.EM_ANDAMENTO.name();
     }
 
     public void encerrar() {
-        exigir(status == StatusFase.EM_ANDAMENTO, "Só é possível encerrar uma fase em andamento.");
-        this.status = StatusFase.ENCERRADA;
+        exigir(getStatus() == StatusFase.EM_ANDAMENTO, "Só é possível encerrar uma fase em andamento.");
+        this.status = StatusFase.ENCERRADA.name();
     }
 
     public Long getId() {
@@ -94,6 +96,10 @@ public class Fase {
     }
 
     public StatusFase getStatus() {
-        return status;
+        return StatusFase.valueOf(status);
+    }
+
+    public Long getVersion() {
+        return version;
     }
 }

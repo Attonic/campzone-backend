@@ -4,6 +4,7 @@ import static br.com.codeacle.campzone.common.domain.Invariantes.exigir;
 import static br.com.codeacle.campzone.common.domain.Invariantes.minimo;
 import static br.com.codeacle.campzone.common.domain.Invariantes.obrigatorio;
 
+import br.com.codeacle.campzone.campeonato.domain.FormatoCampeonato;
 import br.com.codeacle.campzone.organizacao.domain.Organizacao;
 import br.com.codeacle.campzone.participante.domain.Participante;
 import jakarta.persistence.Column;
@@ -17,6 +18,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
+import jakarta.persistence.Version;
 
 /**
  * Confronto do mata-mata: agrupa de 1 a N partidas (jogo único, ida e volta, série), tem posição na chave e pode
@@ -63,14 +65,22 @@ public class Confronto {
     @Column(nullable = false)
     private boolean bye;
 
+    @Version
+    private Long version;
+
     protected Confronto() {
     }
 
     private Confronto(Fase fase, int posicao, Participante participanteA, Participante participanteB, boolean bye) {
         this.fase = obrigatorio(fase, "Fase");
+        exigir(fase.getCampeonato().getFormato() == FormatoCampeonato.MATA_MATA,
+                "Confrontos só existem em campeonatos de mata-mata.");
         this.organizacao = fase.getOrganizacao();
         this.posicao = minimo(posicao, 1, "Posição do confronto");
         this.participanteA = obrigatorio(participanteA, "Participante A");
+        exigir(participanteA.pertenceAo(fase.getCampeonato()), "Participante A não pertence ao campeonato da fase.");
+        exigir(participanteB == null || participanteB.pertenceAo(fase.getCampeonato()),
+                "Participante B não pertence ao campeonato da fase.");
         this.participanteB = participanteB;
         this.bye = bye;
         if (bye) {
@@ -82,7 +92,8 @@ public class Confronto {
     public static Confronto entre(Fase fase, int posicao, Participante participanteA, Participante participanteB) {
         obrigatorio(participanteB, "Participante B");
         obrigatorio(participanteA, "Participante A");
-        exigir(!participanteA.mesmoQue(participanteB), "Um confronto precisa de dois participantes diferentes.");
+        exigir(!Participante.mesmo(participanteA, participanteB),
+                "Um confronto precisa de dois participantes diferentes.");
         return new Confronto(fase, posicao, participanteA, participanteB, false);
     }
 
@@ -95,7 +106,7 @@ public class Confronto {
     public void definirVencedor(Participante vencedor) {
         exigir(!bye, "Confronto bye já tem o vencedor definido.");
         obrigatorio(vencedor, "Vencedor");
-        exigir(vencedor.mesmoQue(participanteA) || vencedor.mesmoQue(participanteB),
+        exigir(Participante.mesmo(vencedor, participanteA) || Participante.mesmo(vencedor, participanteB),
                 "O vencedor deve ser um dos participantes do confronto.");
         this.vencedor = vencedor;
     }
@@ -130,5 +141,9 @@ public class Confronto {
 
     public boolean isBye() {
         return bye;
+    }
+
+    public Long getVersion() {
+        return version;
     }
 }

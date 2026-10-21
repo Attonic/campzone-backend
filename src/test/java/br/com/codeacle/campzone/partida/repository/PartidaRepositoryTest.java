@@ -187,4 +187,78 @@ class PartidaRepositoryTest {
         assertThatThrownBy(() -> em.persistAndFlush(new Resultado(partida, 1, 0)))
                 .rootCause().hasMessageContaining("uk_resultado_partida");
     }
+
+    @Test
+    void bancoRejeitaPartidaSemRodadaENemConfronto() {
+        Campeonato campeonato = Cenario.pontosCorridos(em, Cenario.organizacao(em, "Org"));
+        Fase fase = em.persist(new Fase(campeonato, "Fase 1", 1));
+        Rodada rodada = em.persist(new Rodada(fase, 1));
+        Partida partida = em.persist(Partida.daRodada(rodada, Cenario.participante(em, campeonato, "A"),
+                Cenario.participante(em, campeonato, "B")));
+        em.flush();
+
+        assertThatThrownBy(() -> {
+            em.getEntityManager().createNativeQuery("update partida set rodada_id = null where id = :id")
+                    .setParameter("id", partida.getId()).executeUpdate();
+            em.flush();
+        }).rootCause().hasMessageContaining("ck_partida_rodada_xor_confronto");
+    }
+
+    @Test
+    void bancoRejeitaPartidaComRodadaEConfrontoAoMesmoTempo() {
+        Organizacao org = Cenario.organizacao(em, "Org");
+        Campeonato liga = Cenario.pontosCorridos(em, org);
+        Campeonato copa = Cenario.mataMata(em, org);
+        Fase faseLiga = em.persist(new Fase(liga, "Fase 1", 1));
+        Rodada rodada = em.persist(new Rodada(faseLiga, 1));
+        Partida partida = em.persist(Partida.daRodada(rodada, Cenario.participante(em, liga, "A"),
+                Cenario.participante(em, liga, "B")));
+        Fase faseCopa = em.persist(new Fase(copa, "Final", 1));
+        Confronto confronto = em.persist(Confronto.entre(faseCopa, 1, Cenario.participante(em, copa, "C"),
+                Cenario.participante(em, copa, "D")));
+        em.flush();
+
+        assertThatThrownBy(() -> em.getEntityManager()
+                .createNativeQuery("update partida set confronto_id = :c where id = :id")
+                .setParameter("c", confronto.getId()).setParameter("id", partida.getId()).executeUpdate())
+                .rootCause().hasMessageContaining("ck_partida_rodada_xor_confronto");
+    }
+
+    @Test
+    void bancoRejeitaPlacarNegativo() {
+        Campeonato campeonato = Cenario.pontosCorridos(em, Cenario.organizacao(em, "Org"));
+        Fase fase = em.persist(new Fase(campeonato, "Fase 1", 1));
+        Rodada rodada = em.persist(new Rodada(fase, 1));
+        Partida partida = em.persist(Partida.daRodada(rodada, Cenario.participante(em, campeonato, "A"),
+                Cenario.participante(em, campeonato, "B")));
+        Resultado resultado = em.persist(new Resultado(partida, 1, 0));
+        em.flush();
+
+        assertThatThrownBy(() -> em.getEntityManager()
+                .createNativeQuery("update resultado set placar_visitante = -1 where id = :id")
+                .setParameter("id", resultado.getId()).executeUpdate())
+                .rootCause().hasMessageContaining("ck_resultado_placares");
+        assertThatThrownBy(() -> em.getEntityManager()
+                .createNativeQuery("update resultado set placar_desempate_mandante = -2 where id = :id")
+                .setParameter("id", resultado.getId()).executeUpdate())
+                .rootCause().hasMessageContaining("ck_resultado_placares");
+    }
+
+    @Test
+    void faseEConfrontoTemVersaoParaLockOtimista() {
+        Campeonato campeonato = Cenario.mataMata(em, Cenario.organizacao(em, "Org"));
+        Fase fase = em.persist(new Fase(campeonato, "Final", 1));
+        Confronto confronto = em.persist(Confronto.entre(fase, 1, Cenario.participante(em, campeonato, "A"),
+                Cenario.participante(em, campeonato, "B")));
+        em.flush();
+        assertThat(fase.getVersion()).isZero();
+        assertThat(confronto.getVersion()).isZero();
+
+        fase.iniciar();
+        confronto.definirVencedor(confronto.getParticipanteA());
+        em.flush();
+
+        assertThat(fase.getVersion()).isEqualTo(1L);
+        assertThat(confronto.getVersion()).isEqualTo(1L);
+    }
 }

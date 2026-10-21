@@ -11,6 +11,7 @@ import org.junit.jupiter.api.Test;
 import br.com.codeacle.campzone.campeonato.domain.Campeonato;
 import br.com.codeacle.campzone.campeonato.domain.ConfigMataMataEmbutida;
 import br.com.codeacle.campzone.campeonato.domain.ConfigPontosCorridosEmbutida;
+import br.com.codeacle.campzone.campeonato.domain.DesempateMataMata;
 import br.com.codeacle.campzone.campeonato.domain.Seeding;
 import br.com.codeacle.campzone.campeonato.domain.TipoConfronto;
 import br.com.codeacle.campzone.common.domain.InvarianteDominioException;
@@ -24,9 +25,12 @@ class PartidaDominioTest {
     private final Campeonato liga = Campeonato.pontosCorridos(org, "Liga", "Futebol", "liga",
             ConfigPontosCorridosEmbutida.padrao(1));
     private final Campeonato copa = Campeonato.mataMata(org, "Copa", "Xadrez", "copa",
-            new ConfigMataMataEmbutida(TipoConfronto.IDA_E_VOLTA, null, List.of(), Seeding.ALEATORIO, false));
+            new ConfigMataMataEmbutida(TipoConfronto.IDA_E_VOLTA, null, List.of(DesempateMataMata.PENALTIS),
+                    Seeding.ALEATORIO, false));
     private final Participante a = new Participante(liga, "A", null);
     private final Participante b = new Participante(liga, "B", null);
+    private final Participante ac = new Participante(copa, "A", null);
+    private final Participante bc = new Participante(copa, "B", null);
     private final Fase fase = new Fase(liga, "Fase única", 1);
     private final Fase faseCopa = new Fase(copa, "Final", 1);
 
@@ -88,20 +92,20 @@ class PartidaDominioTest {
         assertThatThrownBy(() -> Partida.daRodada(rodada, null, b)).isInstanceOf(InvarianteDominioException.class);
         assertThatThrownBy(() -> Partida.daRodada(rodada, a, null)).isInstanceOf(InvarianteDominioException.class);
         assertThatThrownBy(() -> Partida.daRodada(null, a, b)).isInstanceOf(InvarianteDominioException.class);
-        assertThatThrownBy(() -> Partida.doConfronto(null, 1, a, b)).isInstanceOf(InvarianteDominioException.class);
+        assertThatThrownBy(() -> Partida.doConfronto(null, 1, ac, bc)).isInstanceOf(InvarianteDominioException.class);
     }
 
     @Test
     void partidaDoConfrontoExigeNumeroDoJogoPositivo() {
-        Confronto confronto = Confronto.entre(faseCopa, 1, a, b);
+        Confronto confronto = Confronto.entre(faseCopa, 1, ac, bc);
 
-        Partida ida = Partida.doConfronto(confronto, 1, a, b);
+        Partida ida = Partida.doConfronto(confronto, 1, ac, bc);
 
         assertThat(ida.getConfronto()).isSameAs(confronto);
         assertThat(ida.getRodada()).isNull();
         assertThat(ida.getFase()).isSameAs(faseCopa);
         assertThat(ida.getStatus()).isEqualTo(StatusPartida.AGENDADA);
-        assertThatThrownBy(() -> Partida.doConfronto(confronto, 0, a, b))
+        assertThatThrownBy(() -> Partida.doConfronto(confronto, 0, ac, bc))
                 .isInstanceOf(InvarianteDominioException.class);
     }
 
@@ -120,34 +124,88 @@ class PartidaDominioTest {
 
     @Test
     void confrontoEntreDoisDistintosEComBye() {
-        Confronto confronto = Confronto.entre(faseCopa, 1, a, b);
+        Confronto confronto = Confronto.entre(faseCopa, 1, ac, bc);
         assertThat(confronto.isBye()).isFalse();
         assertThat(confronto.getVencedor()).isNull();
         assertThat(confronto.getOrganizacao()).isSameAs(org);
 
-        confronto.definirVencedor(b);
-        assertThat(confronto.getVencedor()).isSameAs(b);
+        confronto.definirVencedor(bc);
+        assertThat(confronto.getVencedor()).isSameAs(bc);
 
-        Confronto bye = Confronto.comBye(faseCopa, 2, a);
+        Confronto bye = Confronto.comBye(faseCopa, 2, ac);
         assertThat(bye.isBye()).isTrue();
         assertThat(bye.getParticipanteB()).isNull();
-        assertThat(bye.getVencedor()).isSameAs(a);
+        assertThat(bye.getVencedor()).isSameAs(ac);
     }
 
     @Test
     void confrontoInvalidoEhRejeitado() {
         Participante estranho = new Participante(copa, "Z", null);
 
-        assertThatThrownBy(() -> Confronto.entre(faseCopa, 1, a, a)).isInstanceOf(InvarianteDominioException.class);
-        assertThatThrownBy(() -> Confronto.entre(faseCopa, 1, a, null)).isInstanceOf(InvarianteDominioException.class);
-        assertThatThrownBy(() -> Confronto.entre(faseCopa, 1, null, b)).isInstanceOf(InvarianteDominioException.class);
-        assertThatThrownBy(() -> Confronto.entre(faseCopa, 0, a, b)).isInstanceOf(InvarianteDominioException.class);
+        assertThatThrownBy(() -> Confronto.entre(faseCopa, 1, ac, ac)).isInstanceOf(InvarianteDominioException.class);
+        assertThatThrownBy(() -> Confronto.entre(faseCopa, 1, ac, null)).isInstanceOf(InvarianteDominioException.class);
+        assertThatThrownBy(() -> Confronto.entre(faseCopa, 1, null, bc)).isInstanceOf(InvarianteDominioException.class);
+        assertThatThrownBy(() -> Confronto.entre(faseCopa, 0, ac, bc)).isInstanceOf(InvarianteDominioException.class);
         assertThatThrownBy(() -> Confronto.comBye(faseCopa, 1, null)).isInstanceOf(InvarianteDominioException.class);
-        Confronto confronto = Confronto.entre(faseCopa, 1, a, b);
+        Confronto confronto = Confronto.entre(faseCopa, 1, ac, bc);
         assertThatThrownBy(() -> confronto.definirVencedor(estranho)).isInstanceOf(InvarianteDominioException.class);
         assertThatThrownBy(() -> confronto.definirVencedor(null)).isInstanceOf(InvarianteDominioException.class);
-        assertThatThrownBy(() -> Confronto.comBye(faseCopa, 1, a).definirVencedor(a))
+        assertThatThrownBy(() -> Confronto.comBye(faseCopa, 1, ac).definirVencedor(ac))
                 .isInstanceOf(InvarianteDominioException.class);
+    }
+
+    @Test
+    void confrontoComParticipanteDeOutroCampeonatoEhRejeitado() {
+        assertThatThrownBy(() -> Confronto.entre(faseCopa, 1, a, bc))
+                .isInstanceOf(InvarianteDominioException.class).hasMessageContaining("Participante A");
+        assertThatThrownBy(() -> Confronto.entre(faseCopa, 1, ac, b))
+                .isInstanceOf(InvarianteDominioException.class).hasMessageContaining("Participante B");
+        assertThatThrownBy(() -> Confronto.comBye(faseCopa, 1, a)).isInstanceOf(InvarianteDominioException.class);
+    }
+
+    @Test
+    void confrontoSoExisteEmCampeonatoDeMataMata() {
+        assertThatThrownBy(() -> Confronto.entre(fase, 1, a, b))
+                .isInstanceOf(InvarianteDominioException.class).hasMessageContaining("mata-mata");
+    }
+
+    @Test
+    void rodadaSoExisteEmCampeonatoDePontosCorridos() {
+        assertThatThrownBy(() -> new Rodada(faseCopa, 1))
+                .isInstanceOf(InvarianteDominioException.class).hasMessageContaining("pontos corridos");
+    }
+
+    @Test
+    void partidaDeRodadaComParticipanteDeOutroCampeonatoEhRejeitada() {
+        Rodada rodada = new Rodada(fase, 1);
+
+        assertThatThrownBy(() -> Partida.daRodada(rodada, a, ac))
+                .isInstanceOf(InvarianteDominioException.class).hasMessageContaining("campeonato da fase");
+        assertThatThrownBy(() -> Partida.daRodada(rodada, ac, b))
+                .isInstanceOf(InvarianteDominioException.class);
+    }
+
+    @Test
+    void partidaDoConfrontoExigeOsParticipantesDoConfronto() {
+        Participante terceiro = new Participante(copa, "C", null);
+        Confronto confronto = Confronto.entre(faseCopa, 1, ac, bc);
+
+        assertThat(Partida.doConfronto(confronto, 2, bc, ac).getMandante()).isSameAs(bc);
+        assertThatThrownBy(() -> Partida.doConfronto(confronto, 1, ac, terceiro))
+                .isInstanceOf(InvarianteDominioException.class).hasMessageContaining("participantes do confronto");
+        assertThatThrownBy(() -> Partida.doConfronto(confronto, 1, terceiro, bc))
+                .isInstanceOf(InvarianteDominioException.class);
+        assertThatThrownBy(() -> Partida.doConfronto(confronto, 1, a, b))
+                .isInstanceOf(InvarianteDominioException.class);
+    }
+
+    @Test
+    void confrontoByeNaoTemPartidas() {
+        Participante terceiro = new Participante(copa, "C", null);
+        Confronto bye = Confronto.comBye(faseCopa, 1, ac);
+
+        assertThatThrownBy(() -> Partida.doConfronto(bye, 1, ac, terceiro))
+                .isInstanceOf(InvarianteDominioException.class).hasMessageContaining("bye");
     }
 
     @Test
