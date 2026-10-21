@@ -60,6 +60,16 @@ class PerfisConfiguracaoTest {
     }
 
     @Test
+    void devEProdAtivosJuntosNaoSobemMesmoComTodasAsVariaveisDeProd() {
+        assertThatThrownBy(() -> construtor(CampzoneApplication.class, "spring.profiles.active=dev,prod",
+                "DB_URL=jdbc:postgresql://db:5432/x", "DB_USER=u", "DB_PASSWORD=p", "JWT_SECRET=" + SEGREDO,
+                "ADMIN_EMAIL=a@x.com", "ADMIN_SENHA=senha-admin-forte").run())
+                .hasStackTraceContaining("Perfis dev e prod não podem estar ativos ao mesmo tempo.");
+        assertThatThrownBy(() -> construtor(CampzoneApplication.class, "spring.profiles.active=prod,dev").run())
+                .hasStackTraceContaining("Perfis dev e prod não podem estar ativos ao mesmo tempo.");
+    }
+
+    @Test
     void naoExistePerfilPadrao() {
         try (ConfigurableApplicationContext contexto = construtor().run()) {
             Environment env = contexto.getEnvironment();
