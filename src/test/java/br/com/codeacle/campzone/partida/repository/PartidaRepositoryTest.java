@@ -224,8 +224,7 @@ class PartidaRepositoryTest {
                 .rootCause().hasMessageContaining("ck_partida_rodada_xor_confronto");
     }
 
-    @Test
-    void bancoRejeitaPlacarNegativo() {
+    private Resultado resultadoPersistido() {
         Campeonato campeonato = Cenario.pontosCorridos(em, Cenario.organizacao(em, "Org"));
         Fase fase = em.persist(new Fase(campeonato, "Fase 1", 1));
         Rodada rodada = em.persist(new Rodada(fase, 1));
@@ -233,11 +232,24 @@ class PartidaRepositoryTest {
                 Cenario.participante(em, campeonato, "B")));
         Resultado resultado = em.persist(new Resultado(partida, 1, 0));
         em.flush();
+        return resultado;
+    }
+
+    @Test
+    void bancoRejeitaPlacarNegativo() {
+        Resultado resultado = resultadoPersistido();
 
         assertThatThrownBy(() -> em.getEntityManager()
                 .createNativeQuery("update resultado set placar_visitante = -1 where id = :id")
                 .setParameter("id", resultado.getId()).executeUpdate())
                 .rootCause().hasMessageContaining("ck_resultado_placares");
+    }
+
+    /** Teste separado: o erro do anterior aborta a transação, então cada violação precisa do seu rollback. */
+    @Test
+    void bancoRejeitaPlacarDeDesempateNegativo() {
+        Resultado resultado = resultadoPersistido();
+
         assertThatThrownBy(() -> em.getEntityManager()
                 .createNativeQuery("update resultado set placar_desempate_mandante = -2 where id = :id")
                 .setParameter("id", resultado.getId()).executeUpdate())

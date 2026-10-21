@@ -10,8 +10,9 @@ import org.springframework.boot.jpa.test.autoconfigure.TestEntityManager;
 
 /**
  * Com {@code ddl-auto=update} o Hibernate não atualiza CHECKs já criadas: uma CHECK de valores de enum travaria a
- * evolução do enum em bancos existentes. Os enums são gravados por conversores (sem CHECK); este teste garante que
- * nenhuma CHECK implícita volte e que só existam as CHECKs explícitas (nome começando por {@code ck_}).
+ * evolução do enum em bancos existentes. Os enums são gravados como campo String na entidade (ADR 0003), porque
+ * converter também gera CHECK no Hibernate 7.4. Este teste garante que nenhuma CHECK implícita volte e que só
+ * existam as CHECKs explícitas (nome começando por {@code ck_}).
  */
 @RepositorioTest
 class SchemaSemChecksDeEnumTest {
