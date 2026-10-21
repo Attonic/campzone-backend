@@ -1,0 +1,79 @@
+package br.com.codeacle.campzone.config;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
+import org.junit.jupiter.api.Test;
+import org.springframework.boot.WebApplicationType;
+import org.springframework.boot.builder.SpringApplicationBuilder;
+import org.springframework.context.ConfigurableApplicationContext;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.core.env.Environment;
+
+import br.com.codeacle.campzone.CampzoneApplication;
+
+/**
+ * Verifica os perfis de configuração sem subir banco: os contextos usam uma configuração vazia (sem
+ * auto-configuração), então só o carregamento dos arquivos application*.yml é exercitado.
+ */
+class PerfisConfiguracaoTest {
+
+    @Configuration
+    static class ConfiguracaoVazia {
+    }
+
+    private SpringApplicationBuilder construtor(String... propriedades) {
+        return new SpringApplicationBuilder(ConfiguracaoVazia.class)
+                .web(WebApplicationType.NONE)
+                .properties(propriedades);
+    }
+
+    @Test
+    void semPerfilInformadoOPadraoEODev() {
+        try (ConfigurableApplicationContext contexto = construtor("spring.profiles.active=").run()) {
+            Environment env = contexto.getEnvironment();
+            assertThat(env.getDefaultProfiles()).contains("dev");
+            assertThat(env.getProperty("spring.datasource.url")).isEqualTo("jdbc:postgresql://localhost:5433/campzone");
+            assertThat(env.getProperty("logging.level.br.com.codeacle.campzone")).isEqualTo("DEBUG");
+        }
+    }
+
+    @Test
+    void prodComVariaveisUsaValoresDeProducao() {
+        try (ConfigurableApplicationContext contexto = construtor(
+                "spring.profiles.active=prod",
+                "DB_URL=jdbc:postgresql://db:5432/x", "DB_USER=u", "DB_PASSWORD=p").run()) {
+            Environment env = contexto.getEnvironment();
+            assertThat(env.getProperty("spring.datasource.url")).isEqualTo("jdbc:postgresql://db:5432/x");
+            assertThat(env.getProperty("server.port")).isEqualTo("8080");
+            assertThat(env.getProperty("server.error.include-stacktrace")).isEqualTo("never");
+            assertThat(env.getProperty("server.error.include-message")).isEqualTo("never");
+            assertThat(env.getProperty("spring.jpa.show-sql")).isEqualTo("false");
+            assertThat(env.getProperty("logging.level.br.com.codeacle.campzone")).isEqualTo("INFO");
+            assertThat(env.getProperty("spring.datasource.hikari.maximum-pool-size")).isEqualTo("10");
+        }
+    }
+
+    @Test
+    void prodNaoTemDefaultParaCredenciaisDoBanco() {
+        try (ConfigurableApplicationContext contexto = construtor("spring.profiles.active=prod").run()) {
+            Environment env = contexto.getEnvironment();
+            for (String chave : new String[] { "spring.datasource.url", "spring.datasource.username",
+                    "spring.datasource.password" }) {
+                assertThatThrownBy(() -> env.getProperty(chave))
+                        .isInstanceOf(IllegalArgumentException.class)
+                        .hasMessageContaining("DB_");
+            }
+        }
+    }
+
+    @Test
+    void aplicacaoRealEmProdSemVariaveisDoBancoNaoSobe() {
+        assertThatThrownBy(() -> new SpringApplicationBuilder(CampzoneApplication.class)
+                .web(WebApplicationType.NONE)
+                .properties("spring.profiles.active=prod")
+                .run())
+                .hasStackTraceContaining("variáveis de ambiente obrigatórias ausentes")
+                .hasStackTraceContaining("DB_URL, DB_USER, DB_PASSWORD");
+    }
+}
