@@ -20,8 +20,12 @@ O frontend fica no repositório `campzone-frontend` (`github.com/Attonic/campzon
 
 ## Rodando em desenvolvimento (perfil `dev`)
 
-O perfil `dev` é o padrão: sem informar perfil, a aplicação usa `application-dev.yml`, que conecta no
-PostgreSQL do `docker-compose.yml` em `localhost:5433` (usuário, senha e banco `campzone`).
+O perfil `dev` usa `application-dev.yml`, que conecta no PostgreSQL do `docker-compose.yml` em `localhost:5433`
+(usuário, senha e banco `campzone`) e traz um segredo JWT e contas de teste públicos.
+
+**Não existe perfil padrão** (ADR 0004): sem `SPRING_PROFILES_ACTIVE` a aplicação não sobe e avisa "Nenhum perfil
+ativo: defina SPRING_PROFILES_ACTIVE=dev (desenvolvimento) ou prod.". Assim um deploy que esquecesse o perfil `prod`
+nunca cairia no `dev` por engano. O `./mvnw spring-boot:run` e as configurações de execução do IntelliJ já usam `dev`.
 
 1. Suba o PostgreSQL (não precisa de `.env`; copie `.env.example` para `.env` só se quiser mudar algo):
 
@@ -69,9 +73,13 @@ também sobrescrevem o `dev`.
 ### IntelliJ IDEA
 
 - Em *Project Structure > SDK*, use o `temurin-21` (JDK 21).
-- Rode a classe `CampzoneApplication` sem configurar perfil: cai no `dev`. Requer o `docker compose up -d`.
-- Alternativa sem docker-compose: rode `TestCampzoneApplication` (em `src/test`), que sobe um PostgreSQL
+- Use a configuração de execução versionada **CampzoneApplication (dev)** (em `.run/`, aparece sozinha na lista de
+  execuções): ela roda `CampzoneApplication` com `-Dspring.profiles.active=dev`. Requer o `docker compose up -d`.
+  Se rodar a classe `CampzoneApplication` direto, sem perfil, a aplicação não sobe (veja acima).
+- Alternativa sem docker-compose: **TestCampzoneApplication (dev)** (também em `.run/`) sobe um PostgreSQL
   descartável via Testcontainers (precisa do Docker rodando, mas não do compose).
+- Pelo Maven: `./mvnw spring-boot:run` usa `dev`; para outro perfil, `-Dspring-boot.run.profiles=<perfil>`.
+- Por jar: `SPRING_PROFILES_ACTIVE=dev java -jar target/campzone-0.0.1-SNAPSHOT.jar` (o jar nunca assume perfil).
 
 ## Produção (perfil `prod`)
 
@@ -85,7 +93,7 @@ aplicação não sobe e informa quais faltam:
 | `DB_PASSWORD` | senha do banco |
 | `JWT_SECRET` | segredo HMAC-SHA256 do JWT, mínimo 32 bytes (gere com `openssl rand -base64 48`) |
 | `ADMIN_EMAIL` | e-mail do admin da plataforma, criado no primeiro start se não existir |
-| `ADMIN_SENHA` | senha inicial do admin (nunca é sobrescrita depois de criado) |
+| `ADMIN_SENHA` | senha inicial do admin, mínimo 12 caracteres (nunca é sobrescrita depois de criado) |
 
 As três `DB_*` são exigidas de propósito: definir só `SPRING_DATASOURCE_*` não basta, porque o
 `application-prod.yml` lê apenas as variáveis `DB_*`.
