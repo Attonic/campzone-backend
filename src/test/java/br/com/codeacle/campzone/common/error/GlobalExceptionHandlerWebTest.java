@@ -17,12 +17,13 @@ import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 
+import br.com.codeacle.campzone.support.SegurancaWebTest;
 import br.com.codeacle.testes.ApiTesteController;
-import br.com.codeacle.campzone.common.security.SecurityConfig;
 
 @ExtendWith(OutputCaptureExtension.class)
 @WebMvcTest(ApiTesteController.class)
-@Import({ ApiTesteController.class, SecurityConfig.class, GlobalExceptionHandler.class })
+@Import(ApiTesteController.class)
+@SegurancaWebTest
 class GlobalExceptionHandlerWebTest {
 
     @Autowired
@@ -53,6 +54,16 @@ class GlobalExceptionHandlerWebTest {
                 .andExpect(content().string(org.hamcrest.Matchers.not(
                         org.hamcrest.Matchers.containsString("IllegalStateException"))))
                 .andExpect(jsonPath("$.trace").doesNotExist());
+    }
+
+    @Test
+    void invarianteDeDominioDevolve400ComAMensagemDoDominio() throws Exception {
+        mockMvc.perform(get("/api/v1/public/invariante"))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.title").value("Dado inválido"))
+                .andExpect(jsonPath("$.detail").value("Nome é obrigatório."));
     }
 
     @Test

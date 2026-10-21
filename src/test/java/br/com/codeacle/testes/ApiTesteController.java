@@ -1,11 +1,14 @@
 package br.com.codeacle.testes;
 
+import java.util.Map;
+
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import br.com.codeacle.campzone.common.security.OrganizacaoAtual;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 
@@ -42,6 +45,22 @@ public class ApiTesteController {
         return "segredo";
     }
 
+    @GetMapping("/admin/teste")
+    String areaAdmin() {
+        return "admin";
+    }
+
+    /** Devolve a organização resolvida do JWT, para provar que body, query e header são ignorados. */
+    @GetMapping("/teste/organizacao-atual")
+    Long organizacaoAtual(@OrganizacaoAtual Long organizacaoId) {
+        return organizacaoId;
+    }
+
+    @PostMapping("/teste/organizacao-atual")
+    Long organizacaoAtualComBody(@OrganizacaoAtual Long organizacaoId, @RequestBody Map<String, Object> corpo) {
+        return organizacaoId;
+    }
+
     @GetMapping("/public/acesso-negado")
     String acessoNegado() {
         throw new org.springframework.security.access.AccessDeniedException("negado");
@@ -50,6 +69,11 @@ public class ApiTesteController {
     @GetMapping("/public/nao-autenticado")
     String naoAutenticado() {
         throw new org.springframework.security.authentication.BadCredentialsException("credenciais");
+    }
+
+    @GetMapping("/public/invariante")
+    String invariante() {
+        throw new br.com.codeacle.campzone.common.domain.InvarianteDominioException("Nome é obrigatório.");
     }
 
     @GetMapping("/public/conflito")

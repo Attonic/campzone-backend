@@ -1,5 +1,5 @@
-# Perfil de produção. DB_URL, DB_USER e DB_PASSWORD são obrigatórios e NÃO têm default:
-# se faltar algum, a aplicação não sobe (falha rápida).
+# Perfil de produção. DB_URL, DB_USER, DB_PASSWORD, JWT_SECRET, ADMIN_EMAIL e ADMIN_SENHA são obrigatórios e NÃO
+# têm default: se faltar algum, a aplicação não sobe (falha rápida).
 spring:
   datasource:
     url: ${DB_URL}
@@ -10,6 +10,13 @@ spring:
       minimum-idle: ${DB_POOL_MIN_IDLE:2}
   jpa:
     show-sql: false
+
+campzone:
+  jwt:
+    segredo: ${JWT_SECRET}
+  admin:
+    email: ${ADMIN_EMAIL}
+    senha: ${ADMIN_SENHA}
 
 server:
   port: ${PORT:8080}
