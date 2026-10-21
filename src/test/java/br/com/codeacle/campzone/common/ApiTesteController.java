@@ -56,4 +56,16 @@ public class ApiTesteController {
             reason = "Recurso em conflito")
     static class ConflitoAnotadoException extends RuntimeException {
     }
+
+    @GetMapping("/public/indisponivel")
+    String indisponivel() {
+        throw new IndisponivelAnotadoException();
+    }
+
+    @org.springframework.web.bind.annotation.ResponseStatus(code = org.springframework.http.HttpStatus.SERVICE_UNAVAILABLE)
+    static class IndisponivelAnotadoException extends RuntimeException {
+        IndisponivelAnotadoException() {
+            super("falha-5xx-anotada");
+        }
+    }
 }

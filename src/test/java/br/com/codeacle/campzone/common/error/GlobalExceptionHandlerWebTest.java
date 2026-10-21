@@ -7,6 +7,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.springframework.boot.test.system.CapturedOutput;
+import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
@@ -17,6 +20,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import br.com.codeacle.campzone.common.ApiTesteController;
 import br.com.codeacle.campzone.common.security.SecurityConfig;
 
+@ExtendWith(OutputCaptureExtension.class)
 @WebMvcTest(ApiTesteController.class)
 @Import({ SecurityConfig.class, GlobalExceptionHandler.class })
 class GlobalExceptionHandlerWebTest {
@@ -91,5 +95,14 @@ class GlobalExceptionHandlerWebTest {
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
                 .andExpect(jsonPath("$.status").value(409))
                 .andExpect(jsonPath("$.detail").value("Recurso em conflito"));
+    }
+
+    @Test
+    void responseStatus5xxMantemOStatusELogaOErro(CapturedOutput output) throws Exception {
+        mockMvc.perform(get("/api/v1/public/indisponivel"))
+                .andExpect(status().isServiceUnavailable())
+                .andExpect(jsonPath("$.status").value(503));
+
+        org.assertj.core.api.Assertions.assertThat(output.getAll()).contains("falha-5xx-anotada");
     }
 }

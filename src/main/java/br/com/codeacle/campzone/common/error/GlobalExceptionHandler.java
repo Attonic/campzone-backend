@@ -60,6 +60,9 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         ResponseStatus anotacao = AnnotatedElementUtils.findMergedAnnotation(ex.getClass(), ResponseStatus.class);
         if (anotacao != null) {
             HttpStatus status = anotacao.code();
+            if (status.is5xxServerError()) {
+                log.error("Erro de servidor ({})", status.value(), ex);
+            }
             String detalhe = anotacao.reason().isEmpty() ? status.getReasonPhrase() : anotacao.reason();
             return ProblemDetail.forStatusAndDetail(status, detalhe);
         }
