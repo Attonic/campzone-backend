@@ -1,0 +1,12 @@
+spring:
+  application:
+    name: campzone
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/campzone}
+    username: ${DB_USER:campzone}
+    password: ${DB_PASSWORD:campzone}
+  jpa:
+    open-in-view: false
+    hibernate:
+      # Sem migrations (decisão do projeto): o schema vem das entidades.
+      ddl-auto: update
