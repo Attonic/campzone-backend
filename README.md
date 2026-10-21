@@ -3,6 +3,8 @@
 API do CampZone (SaaS para organizar campeonatos). Java 21, Spring Boot 4.1, Maven, PostgreSQL.
 Regras de arquitetura e padrões: veja `CLAUDE.md`.
 
+O frontend fica no repositório `campzone-frontend` (`github.com/Attonic/campzone-frontend`).
+
 ## Pré-requisitos (Fedora)
 
 - **JDK 21** (ex.: Temurin). Se o `java` padrão da máquina não for o 21, aponte o `JAVA_HOME`:
