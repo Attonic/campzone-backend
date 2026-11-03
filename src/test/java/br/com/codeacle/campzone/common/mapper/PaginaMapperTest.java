@@ -3,6 +3,7 @@ package br.com.codeacle.campzone.common.mapper;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
@@ -36,7 +37,7 @@ class PaginaMapperTest {
 
     @Test
     void copiaOsItens() {
-        List<String> itens = new java.util.ArrayList<>(List.of("a", "b"));
+        List<String> itens = new ArrayList<>(List.of("a", "b"));
 
         PaginaResponse<String> pagina = mapper.toPaginaResponse(itens, 0, 20, 2);
         itens.add("c");
