@@ -20,7 +20,7 @@ import br.com.codeacle.campzone.organizacao.domain.Organizacao;
  */
 public interface AdminConsultaRepository extends Repository<Organizacao, Long> {
 
-    /** Caractere de escape do {@code like} das consultas por nome. */
+    /** Caractere de escape do {@code like} das consultas por nome; deve ser o mesmo do {@code escape '!'} abaixo. */
     char ESCAPE_LIKE = '!';
 
     @Query("select count(o) from Organizacao o")
