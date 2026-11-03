@@ -17,6 +17,7 @@ import static br.com.codeacle.campzone.motor.matamata.MataMataFixtures.jogoUnico
 import static br.com.codeacle.campzone.motor.matamata.MataMataFixtures.participantes;
 import static br.com.codeacle.campzone.motor.matamata.MataMataFixtures.placar;
 import static br.com.codeacle.campzone.motor.matamata.MataMataFixtures.serie;
+import static br.com.codeacle.campzone.motor.matamata.MataMataFixtures.sorteioFavoreceA;
 import static br.com.codeacle.campzone.motor.matamata.MataMataFixtures.situacoes;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -24,7 +25,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Random;
 import java.util.Set;
 
 import org.junit.jupiter.api.Test;
@@ -151,7 +151,7 @@ class DesempateTest {
         ConfigMataMata config = jogoUnico(SORTEIO);
 
         for (long seed : new long[] { 0, 1, 42, 20260, -7 }) {
-            boolean favoreceA = new Random(seed + 1_000_003L * 1 + 1).nextBoolean();
+            boolean favoreceA = sorteioFavoreceA(seed, 1, 1);
             EstadoMataMata estado = FORMATO.calcular(config, participantes(2), List.of(placar(1, 1, 1, 1, 1)), seed);
             EstadoMataMata outraVez = FORMATO.calcular(config, participantes(2), List.of(placar(1, 1, 1, 1, 1)), seed);
 
@@ -162,12 +162,11 @@ class DesempateTest {
 
     @Test
     void sorteioPodeFavorecerCadaLadoConformeASeed() {
-        // seeds de campeonato espalhadas (a camada de aplicação sorteia a seed como um long qualquer)
-        Random gerador = new Random(1234);
+        // seeds consecutivas: com o SplitMix64 elas se espalham, e os dois lados aparecem
         Set<Long> campeoes = new HashSet<>();
-        for (int i = 0; i < 40; i++) {
-            campeoes.add(FORMATO.calcular(jogoUnico(SORTEIO), participantes(2), List.of(placar(1, 1, 1, 0, 0)),
-                    gerador.nextLong()).campeaoId());
+        for (long seed = 0; seed < 40; seed++) {
+            campeoes.add(FORMATO.calcular(jogoUnico(SORTEIO), participantes(2), List.of(placar(1, 1, 1, 0, 0)), seed)
+                    .campeaoId());
         }
 
         assertThat(campeoes).containsExactlyInAnyOrder(A, B);
@@ -179,7 +178,7 @@ class DesempateTest {
 
         // agregado 1 x 1, sem prorrogação nem pênaltis: o sorteio decide
         EstadoMataMata estado = calcular(config, 2, placar(1, 1, 1, 0, 1), placar(1, 1, 2, 0, 1));
-        long esperado = new Random(SEED + 1_000_003L + 1).nextBoolean() ? A : B;
+        long esperado = sorteioFavoreceA(SEED, 1, 1) ? A : B;
 
         assertThat(estado.campeaoId()).isEqualTo(esperado);
     }
@@ -213,7 +212,7 @@ class DesempateTest {
     @Test
     void prorrogacaoEmpatadaVaiParaOSorteioSemPenaltis() {
         ConfigMataMata config = jogoUnico(PRORROGACAO, SORTEIO);
-        long esperado = new Random(SEED + 1_000_003L + 1).nextBoolean() ? A : B;
+        long esperado = sorteioFavoreceA(SEED, 1, 1) ? A : B;
 
         assertThat(vencedor(config, comProrrogacao(1, 1, 1, 2, 2, 1, 1))).isEqualTo(esperado);
     }

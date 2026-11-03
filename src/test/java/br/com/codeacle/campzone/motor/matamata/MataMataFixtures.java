@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.stream.Collectors;
 
 import br.com.codeacle.campzone.motor.ParticipanteMotor;
@@ -18,6 +19,20 @@ final class MataMataFixtures {
     static final long SEED = 20260;
 
     private MataMataFixtures() {
+    }
+
+    // ---------------------------------------------------------------- sorteio
+
+    /**
+     * Oráculo do sorteio (ADR 0005, Adendo A, item 3), escrito de novo aqui de propósito: os testes não podem usar a
+     * própria implementação para dizer o que ela deveria devolver. {@code true} favorece o A.
+     */
+    static boolean sorteioFavoreceA(long seedSorteio, int ordemFase, int posicao) {
+        long z = seedSorteio + 1_000_003L * ordemFase + posicao;
+        z = (z ^ (z >>> 30)) * 0xBF58476D1CE4E5B9L;
+        z = (z ^ (z >>> 27)) * 0x94D049BB133111EBL;
+        z = z ^ (z >>> 31);
+        return new Random(z).nextBoolean();
     }
 
     // ---------------------------------------------------------------- configs
