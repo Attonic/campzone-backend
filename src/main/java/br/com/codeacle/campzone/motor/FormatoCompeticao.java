@@ -15,7 +15,8 @@ import java.util.List;
 public interface FormatoCompeticao<C, E, R, S> {
 
     /**
-     * Gera a estrutura inicial de jogos. Equivale a {@link #calcular} sem nenhum resultado.
+     * Gera a estrutura inicial de jogos. No mata-mata, em que a estrutura e o estado são o mesmo tipo (ADR 0005,
+     * Adendo A), equivale a {@link #calcular} sem nenhum resultado.
      *
      * @param seedSorteio semente de todo sorteio; é gerada e persistida pela camada de aplicação
      */
@@ -23,8 +24,8 @@ public interface FormatoCompeticao<C, E, R, S> {
 
     /**
      * Confere se o resultado é aceito pela config do formato, só com as checagens que não dependem de outros
-     * resultados. A validade completa (por exemplo, um empate que o jogo decisivo não aceita) é conferida no
-     * {@link #calcular}; para validar um resultado novo, chame-o com o resultado incluído.
+     * resultados. Onde a validade depende dos demais (no mata-mata, por exemplo, um empate que o jogo decisivo não
+     * aceita), a conferência completa é do {@link #calcular}: para validar um resultado novo, chame-o com ele incluído.
      *
      * @throws ResultadoInvalidoException se o resultado for rejeitado
      */
