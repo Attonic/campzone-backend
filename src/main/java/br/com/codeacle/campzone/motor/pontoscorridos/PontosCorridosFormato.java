@@ -4,6 +4,7 @@ import java.util.List;
 
 import br.com.codeacle.campzone.motor.ConfigInvalidaException;
 import br.com.codeacle.campzone.motor.FormatoCompeticao;
+import br.com.codeacle.campzone.motor.OrdemSorteada;
 import br.com.codeacle.campzone.motor.ParticipanteMotor;
 import br.com.codeacle.campzone.motor.ParticipantesInvalidosException;
 import br.com.codeacle.campzone.motor.ResultadoInvalidoException;
