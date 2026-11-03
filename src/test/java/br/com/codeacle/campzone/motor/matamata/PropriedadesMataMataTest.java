@@ -1,6 +1,7 @@
 package br.com.codeacle.campzone.motor.matamata;
 
 import static br.com.codeacle.campzone.motor.matamata.DesempateMataMata.PENALTIS;
+import static br.com.codeacle.campzone.motor.matamata.DesempateMataMata.PRORROGACAO;
 import static br.com.codeacle.campzone.motor.matamata.DesempateMataMata.SORTEIO;
 import static br.com.codeacle.campzone.motor.matamata.MataMataFixtures.FORMATO;
 import static br.com.codeacle.campzone.motor.matamata.MataMataFixtures.SEED;
@@ -36,7 +37,7 @@ class PropriedadesMataMataTest {
 
     /** Todos os tipos de confronto, com e sem 3º lugar. */
     static Stream<ConfigMataMata> configs() {
-        return Stream.of(jogoUnico(PENALTIS), idaEVolta(PENALTIS), serie(3, PENALTIS), serie(5, SORTEIO))
+        return Stream.of(jogoUnico(PENALTIS), idaEVolta(PENALTIS), serie(3, PENALTIS), serie(5, PRORROGACAO, PENALTIS))
                 .flatMap(base -> Stream.of(comTerceiro(base, false), comTerceiro(base, true)));
     }
 

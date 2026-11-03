@@ -38,11 +38,11 @@ class ConfigMataMataTest {
 
     @Test
     void guardaTodosOsCampos() {
-        ConfigMataMata config = new ConfigMataMata(SERIE, 5, List.of(PRORROGACAO, SORTEIO), Seeding.MANUAL, true);
+        ConfigMataMata config = new ConfigMataMata(SERIE, 5, List.of(PRORROGACAO, PENALTIS), Seeding.MANUAL, true);
 
         assertThat(config.tipoConfronto()).isEqualTo(SERIE);
         assertThat(config.melhorDe()).isEqualTo(5);
-        assertThat(config.desempates()).containsExactly(PRORROGACAO, SORTEIO);
+        assertThat(config.desempates()).containsExactly(PRORROGACAO, PENALTIS);
         assertThat(config.seeding()).isEqualTo(Seeding.MANUAL);
         assertThat(config.disputaTerceiroLugar()).isTrue();
     }
@@ -62,7 +62,7 @@ class ConfigMataMataTest {
     @ParameterizedTest
     @ValueSource(ints = { 3, 5, 7, 9, 101 })
     void aceitaSerieImparDeTresOuMais(int melhorDe) {
-        assertThatCode(() -> config(SERIE, melhorDe, SORTEIO)).doesNotThrowAnyException();
+        assertThatCode(() -> config(SERIE, melhorDe, PRORROGACAO, PENALTIS)).doesNotThrowAnyException();
     }
 
     // ---------------------------------------------------------------- campos obrigatórios
@@ -138,6 +138,23 @@ class ConfigMataMataTest {
     }
 
     @Test
+    void recusaSorteioNaSerie() {
+        assertThatThrownBy(() -> config(SERIE, 3, SORTEIO))
+                .isInstanceOf(ConfigInvalidaException.class)
+                .hasMessageContaining("SORTEIO")
+                .hasMessageContaining("série");
+        assertThatThrownBy(() -> config(SERIE, 5, PRORROGACAO, SORTEIO))
+                .isInstanceOf(ConfigInvalidaException.class)
+                .hasMessageContaining("série");
+    }
+
+    @Test
+    void aceitaSorteioForaDaSerie() {
+        assertThatCode(() -> config(JOGO_UNICO, null, PRORROGACAO, SORTEIO)).doesNotThrowAnyException();
+        assertThatCode(() -> config(IDA_E_VOLTA, null, GOLS_FORA, PRORROGACAO, SORTEIO)).doesNotThrowAnyException();
+    }
+
+    @Test
     void recusaSorteioForaDaUltimaPosicao() {
         assertThatThrownBy(() -> config(JOGO_UNICO, null, SORTEIO, PENALTIS))
                 .isInstanceOf(ConfigInvalidaException.class)
@@ -145,6 +162,33 @@ class ConfigMataMataTest {
         assertThatThrownBy(() -> config(JOGO_UNICO, null, PRORROGACAO, SORTEIO, PENALTIS))
                 .isInstanceOf(ConfigInvalidaException.class)
                 .hasMessageContaining("SORTEIO");
+    }
+
+    @Test
+    void recusaQualquerCriterioDepoisDoPrimeiroTerminal() {
+        // depois de PENALTIS nada seria usado: ele sempre decide
+        assertThatThrownBy(() -> config(JOGO_UNICO, null, PENALTIS, SORTEIO))
+                .isInstanceOf(ConfigInvalidaException.class)
+                .hasMessageContaining("depois de PENALTIS");
+        assertThatThrownBy(() -> config(JOGO_UNICO, null, PENALTIS, PRORROGACAO))
+                .isInstanceOf(ConfigInvalidaException.class)
+                .hasMessageContaining("depois de PENALTIS");
+        assertThatThrownBy(() -> config(IDA_E_VOLTA, null, PENALTIS, GOLS_FORA))
+                .isInstanceOf(ConfigInvalidaException.class)
+                .hasMessageContaining("depois de PENALTIS");
+        assertThatThrownBy(() -> config(IDA_E_VOLTA, null, GOLS_FORA, PENALTIS, PRORROGACAO))
+                .isInstanceOf(ConfigInvalidaException.class)
+                .hasMessageContaining("depois de PENALTIS");
+        // e o mesmo vale para o sorteio
+        assertThatThrownBy(() -> config(JOGO_UNICO, null, SORTEIO, PRORROGACAO))
+                .isInstanceOf(ConfigInvalidaException.class)
+                .hasMessageContaining("depois de SORTEIO");
+    }
+
+    @Test
+    void aceitaTerminalNoFimDaListaCompleta() {
+        assertThatCode(() -> config(IDA_E_VOLTA, null, GOLS_FORA, PRORROGACAO, PENALTIS)).doesNotThrowAnyException();
+        assertThatCode(() -> config(JOGO_UNICO, null, PRORROGACAO, PENALTIS)).doesNotThrowAnyException();
     }
 
     @Test

@@ -2,7 +2,8 @@ package br.com.codeacle.campzone.motor.matamata;
 
 /**
  * Critérios para decidir um confronto empatado, aplicados na ordem configurada e só quando necessários.
- * {@link #PENALTIS} e {@link #SORTEIO} sempre decidem; os demais podem empatar e passar ao critério seguinte.
+ * {@link #PENALTIS} e {@link #SORTEIO} sempre decidem (são os terminais); os demais podem empatar e passar ao critério
+ * seguinte. A lista configurada termina no primeiro terminal, e nada pode vir depois dele.
  */
 public enum DesempateMataMata {
 
@@ -15,6 +16,6 @@ public enum DesempateMataMata {
     /** Vence quem fez mais pênaltis. Pênaltis empatados tornam o resultado inválido. */
     PENALTIS,
 
-    /** Sorteio reprodutível por confronto, sem dados no resultado. Deve ser o último critério. */
+    /** Sorteio reprodutível por confronto, sem dados no resultado. Não vale na série. */
     SORTEIO
 }

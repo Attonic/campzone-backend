@@ -25,9 +25,10 @@ public record ConfigMataMata(TipoConfronto tipoConfronto, Integer melhorDe, List
      * @throws ConfigInvalidaException se o tipo de confronto ou o seeding forem nulos; se {@code melhorDe} for
      *                                 informado fora de {@code SERIE}, ou numa série não for ímpar e pelo menos 3; se
      *                                 os desempates forem vazios ou repetidos; se {@code GOLS_FORA} aparecer sem
-     *                                 {@code IDA_E_VOLTA}; se {@code SORTEIO} não for o último; ou se a lista não tiver
-     *                                 um critério terminal ({@code PENALTIS} ou {@code SORTEIO}), sem o qual um empate
-     *                                 seria impossível de lançar
+     *                                 {@code IDA_E_VOLTA}; se {@code SORTEIO} aparecer numa {@code SERIE}; ou se a lista
+     *                                 não terminar no primeiro critério terminal ({@code PENALTIS} ou {@code SORTEIO}),
+     *                                 seja por não ter nenhum (um empate seria impossível de lançar) ou por ter algum
+     *                                 critério depois dele (que nunca seria usado)
      */
     public ConfigMataMata {
         if (tipoConfronto == null) {
@@ -51,14 +52,29 @@ public record ConfigMataMata(TipoConfronto tipoConfronto, Integer melhorDe, List
         if (desempates.contains(DesempateMataMata.GOLS_FORA) && tipoConfronto != TipoConfronto.IDA_E_VOLTA) {
             throw new ConfigInvalidaException("GOLS_FORA só vale na ida e volta");
         }
-        int sorteio = desempates.indexOf(DesempateMataMata.SORTEIO);
-        if (sorteio >= 0 && sorteio != desempates.size() - 1) {
-            throw new ConfigInvalidaException("SORTEIO só pode ser o último critério de desempate");
-        }
-        if (!desempates.contains(DesempateMataMata.PENALTIS) && sorteio < 0) {
+        if (tipoConfronto == TipoConfronto.SERIE && desempates.contains(DesempateMataMata.SORTEIO)) {
             throw new ConfigInvalidaException(
-                    "Os desempates precisam de um critério final (PENALTIS ou SORTEIO); sem ele um empate não teria como ser decidido");
+                    "SORTEIO não vale numa série: sortear o vencedor de um jogo de série não faz sentido em campeonato");
+        }
+        int terminal = indiceDoPrimeiroTerminal(desempates);
+        if (terminal < 0) {
+            throw new ConfigInvalidaException(
+                    "Os desempates precisam terminar num critério final (PENALTIS ou SORTEIO); sem ele um empate não teria como ser decidido");
+        }
+        if (terminal != desempates.size() - 1) {
+            throw new ConfigInvalidaException("Nenhum critério pode vir depois de " + desempates.get(terminal)
+                    + ", que sempre decide: ele deve ser o último dos desempates");
         }
         desempates = List.copyOf(desempates);
+    }
+
+    /** Posição do primeiro critério que sempre decide ({@code PENALTIS} ou {@code SORTEIO}), ou -1 se não houver. */
+    private static int indiceDoPrimeiroTerminal(List<DesempateMataMata> desempates) {
+        for (int i = 0; i < desempates.size(); i++) {
+            if (desempates.get(i) == DesempateMataMata.PENALTIS || desempates.get(i) == DesempateMataMata.SORTEIO) {
+                return i;
+            }
+        }
+        return -1;
     }
 }

@@ -220,12 +220,14 @@ class DesempateTest {
 
     @Test
     void ordemConfiguradaPrevalece() {
-        // com PENALTIS antes de PRORROGACAO, os pênaltis decidem e a prorrogação nunca é pedida nem aceita
-        ConfigMataMata config = jogoUnico(PENALTIS, PRORROGACAO);
+        // o mesmo resultado: ida B 1 x 2 A; volta A 0 x 1 B com prorrogação 0 x 1. Agregado 2 x 2; gols fora A 2 x 1 B
+        ResultadoMataMata ida = placar(1, 1, 1, 1, 2);
+        ResultadoMataMata volta = comProrrogacao(1, 1, 2, 0, 1, 0, 1);
 
-        assertThat(vencedor(config, comPenaltis(1, 1, 1, 1, 1, 4, 3))).isEqualTo(A);
-        rejeita(config, "informe os pênaltis", placar(1, 1, 1, 1, 1));
-        rejeita(config, "não precisa da prorrogação", completo(1, 1, 1, 1, 1, 1, 0, 4, 3));
+        // prorrogação antes dos gols fora: o B vence na prorrogação
+        assertThat(vencedor(idaEVolta(PRORROGACAO, GOLS_FORA, PENALTIS), ida, volta)).isEqualTo(B);
+        // gols fora antes da prorrogação: o A já venceu nos gols fora e a prorrogação informada sobra
+        rejeita(idaEVolta(GOLS_FORA, PRORROGACAO, PENALTIS), "não precisa da prorrogação", ida, volta);
     }
 
     @Test
