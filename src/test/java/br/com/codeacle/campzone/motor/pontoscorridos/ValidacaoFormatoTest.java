@@ -15,7 +15,11 @@ import br.com.codeacle.campzone.motor.ParticipantesInvalidosException;
 import br.com.codeacle.campzone.motor.ResultadoInvalidoException;
 import br.com.codeacle.campzone.motor.ResultadoJogo;
 
-/** Validações de entrada do formato pontos corridos (participantes, config e resultado). */
+/**
+ * Validações de entrada do formato pontos corridos (participantes, config e resultado). Placar negativo e mandante
+ * igual ao visitante são barrados na criação do {@code ResultadoJogo}, antes de chegar ao formato, e por isso são
+ * testados no {@code ResultadoJogoTest}.
+ */
 class ValidacaoFormatoTest {
 
     private final PontosCorridosFormato formato = new PontosCorridosFormato();
@@ -85,16 +89,6 @@ class ValidacaoFormatoTest {
     void semEmpatePermitidoAindaAceitaVitoria() {
         assertThatCode(() -> formato.validarResultado(semEmpate, new ResultadoJogo(1, 2, 1, 0)))
                 .doesNotThrowAnyException();
-    }
-
-    @Test
-    void recusaPlacarNegativoEMandanteIgualAoVisitante() {
-        assertThatThrownBy(() -> formato.validarResultado(config, new ResultadoJogo(1, 2, -1, 0)))
-                .isInstanceOf(ResultadoInvalidoException.class);
-        assertThatThrownBy(() -> formato.validarResultado(config, new ResultadoJogo(1, 2, 0, -1)))
-                .isInstanceOf(ResultadoInvalidoException.class);
-        assertThatThrownBy(() -> formato.validarResultado(config, new ResultadoJogo(1, 1, 2, 0)))
-                .isInstanceOf(ResultadoInvalidoException.class);
     }
 
     @Test
