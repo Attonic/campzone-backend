@@ -1,5 +1,6 @@
 package br.com.codeacle.campzone.common.error;
 
+import java.util.Comparator;
 import java.util.List;
 
 import org.slf4j.Logger;
@@ -21,6 +22,9 @@ import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
 import br.com.codeacle.campzone.common.domain.InvarianteDominioException;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolationException;
+import jakarta.validation.Path;
 
 /**
  * Traduz erros em {@link ProblemDetail} (RFC 9457). Os erros padrão do Spring MVC (404, 405, 415...)
@@ -45,6 +49,38 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         problema.setTitle("Erro de validação");
         problema.setProperty("erros", erros);
         return handleExceptionInternal(ex, problema, headers, HttpStatus.BAD_REQUEST, request);
+    }
+
+    /**
+     * Parâmetro de método inválido (query, path ou header com {@code @Min}, {@code @Size}... num controller
+     * {@code @Validated}): responde 400 com os campos, no mesmo formato da validação de body. Só trata a violação de
+     * <b>parâmetro</b>: uma violação de bean (ex.: entidade na persistência) é bug do servidor e continua 500.
+     */
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ProblemDetail handleViolacaoDeParametro(ConstraintViolationException ex) {
+        boolean soParametros = !ex.getConstraintViolations().isEmpty() && ex.getConstraintViolations().stream()
+                .allMatch(violacao -> violacao.getExecutableParameters() != null);
+        if (!soParametros) {
+            return handleErroInesperado(ex);
+        }
+        List<CampoInvalido> erros = ex.getConstraintViolations().stream()
+                .map(GlobalExceptionHandler::paraCampoInvalido)
+                .sorted(Comparator.comparing(CampoInvalido::campo).thenComparing(CampoInvalido::mensagem))
+                .toList();
+        ProblemDetail problema = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST,
+                "Um ou mais parâmetros são inválidos.");
+        problema.setTitle("Erro de validação");
+        problema.setProperty("erros", erros);
+        return problema;
+    }
+
+    /** O nome do campo é o último nó do caminho (o parâmetro), sem o nome do método. */
+    private static CampoInvalido paraCampoInvalido(ConstraintViolation<?> violacao) {
+        String campo = "parametro";
+        for (Path.Node no : violacao.getPropertyPath()) {
+            campo = no.getName();
+        }
+        return new CampoInvalido(campo, violacao.getMessage());
     }
 
     /**

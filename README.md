@@ -64,6 +64,24 @@ TOKEN=$(curl -s -X POST localhost:8080/api/v1/public/auth/login -H 'Content-Type
 curl -s localhost:8080/api/v1/auth/me -H "Authorization: Bearer $TOKEN"
 ```
 
+### Área do admin da plataforma (somente leitura)
+
+Só o `ADMIN_PLATAFORMA` acessa (o organizador recebe 403, sem token 401). É o único lugar que consulta entre
+organizações (ADR 0002):
+
+- `GET /api/v1/admin/resumo`: `totalOrganizacoes`, `totalUsuarios`, `totalCampeonatos` e `campeonatosAtivos`
+  (`RASCUNHO` ou `EM_ANDAMENTO`).
+- `GET /api/v1/admin/organizacoes?pagina=0&tamanho=20&busca=texto`: organizações da mais nova para a mais antiga, com
+  plano e contagens. `pagina` >= 0 (padrão 0), `tamanho` de 1 a 100 (padrão 20), `busca` com até 100 caracteres
+  (nome contendo o texto, sem diferenciar maiúsculas). Fora dos limites devolve 400.
+
+```bash
+ADMIN=$(curl -s -X POST localhost:8080/api/v1/public/auth/login -H 'Content-Type: application/json' \
+  -d '{"email":"admin@campzone.dev","senha":"admin12345"}' | jq -r .token)
+curl -s localhost:8080/api/v1/admin/resumo -H "Authorization: Bearer $ADMIN"
+curl -s "localhost:8080/api/v1/admin/organizacoes?busca=liga" -H "Authorization: Bearer $ADMIN"
+```
+
 Para parar o banco: `docker compose down` (acrescente `-v` para apagar os dados).
 
 A porta 5433 evita conflito com um PostgreSQL já instalado na 5432. Para mudar, defina `POSTGRES_PORT` no `.env`

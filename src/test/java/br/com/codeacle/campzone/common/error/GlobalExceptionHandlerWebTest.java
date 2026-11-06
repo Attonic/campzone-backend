@@ -19,10 +19,11 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import br.com.codeacle.campzone.support.SegurancaWebTest;
 import br.com.codeacle.testes.ApiTesteController;
+import br.com.codeacle.testes.ApiTesteValidacaoController;
 
 @ExtendWith(OutputCaptureExtension.class)
-@WebMvcTest(ApiTesteController.class)
-@Import(ApiTesteController.class)
+@WebMvcTest({ ApiTesteController.class, ApiTesteValidacaoController.class })
+@Import({ ApiTesteController.class, ApiTesteValidacaoController.class })
 @SegurancaWebTest
 class GlobalExceptionHandlerWebTest {
 
@@ -115,5 +116,33 @@ class GlobalExceptionHandlerWebTest {
                 .andExpect(jsonPath("$.status").value(503));
 
         org.assertj.core.api.Assertions.assertThat(output.getAll()).contains("falha-5xx-anotada");
+    }
+
+    @Test
+    void parametroValidoPassa() throws Exception {
+        mockMvc.perform(get("/api/v1/public/teste-validacao/parametros?valor=5&texto=abc"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void parametroInvalidoDevolve400ComOsCamposNoMesmoFormatoDaValidacaoDeBody() throws Exception {
+        mockMvc.perform(get("/api/v1/public/teste-validacao/parametros?valor=0&texto=abcd"))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.title").value("Erro de validação"))
+                .andExpect(jsonPath("$.erros.length()").value(2))
+                .andExpect(jsonPath("$.erros[0].campo").value("texto"))
+                .andExpect(jsonPath("$.erros[0].mensagem").value("máximo de 3 caracteres"))
+                .andExpect(jsonPath("$.erros[1].campo").value("valor"))
+                .andExpect(jsonPath("$.erros[1].mensagem").value("valor mínimo é 1"));
+    }
+
+    @Test
+    void violacaoDeBeanNaoViraErroDoCliente() throws Exception {
+        mockMvc.perform(get("/api/v1/public/teste-validacao/bean"))
+                .andExpect(status().isInternalServerError())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+                .andExpect(jsonPath("$.detail").value("Erro interno inesperado."));
     }
 }
