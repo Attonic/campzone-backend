@@ -8,6 +8,7 @@ import java.util.Random;
 import java.util.stream.Collectors;
 
 import br.com.codeacle.campzone.motor.ParticipanteMotor;
+import br.com.codeacle.campzone.motor.ParticipantesDeTeste;
 
 /**
  * Apoio dos testes do mata-mata. Os participantes têm seeds de 1 a n no seeding MANUAL e ids 10, 17, 24...: a seed
@@ -74,11 +75,76 @@ final class MataMataFixtures {
         return 10L + 7L * (seed - 1);
     }
 
-    /** A seed de cada participante, pelo id. */
+    /** A seed informada de cada participante, pelo id (nula onde o participante não traz seed). */
     static Map<Long, Integer> seeds(List<ParticipanteMotor> participantes) {
         Map<Long, Integer> seeds = new HashMap<>();
         participantes.forEach(p -> seeds.put(p.id(), p.seed()));
         return seeds;
+    }
+
+    /**
+     * A seed que cada participante de fato recebe na chave, pelo id. No seeding MANUAL é a informada; nos demais ela
+     * sai do sorteio com a seed do campeonato, que o {@code SeedsTest} e os goldens já travam.
+     */
+    static Map<Long, Integer> seedsEfetivas(ConfigMataMata config, List<ParticipanteMotor> participantes,
+            long seedSorteio) {
+        if (config.seeding() == Seeding.MANUAL) {
+            return seeds(participantes);
+        }
+        List<Long> idPorSeed = Seeds.porSeed(config.seeding(), participantes, seedSorteio);
+        Map<Long, Integer> seeds = new HashMap<>();
+        for (int i = 0; i < idPorSeed.size(); i++) {
+            seeds.put(idPorSeed.get(i), i + 1);
+        }
+        return seeds;
+    }
+
+    /**
+     * Como os ids dos participantes se relacionam com as seeds. Os testes de "o A é sempre a melhor seed" precisam
+     * dos três: se o id crescesse sempre com a seed, escolher o A pelo menor id passaria despercebido.
+     */
+    enum Elenco {
+        /** MANUAL, a seed {@code s} é o id {@code 10 + 7 (s - 1)}: a melhor seed tem o menor id. */
+        ID_CRESCE_COM_A_SEED,
+        /** MANUAL, a seed {@code s} é o id {@code 1000 - 7 s}: a melhor seed tem o MAIOR id. */
+        ID_CAI_COM_A_SEED,
+        /** Seeding ALEATORIO: ids 10, 17, 24... sem seed informada, e as seeds saem do sorteio. */
+        SEEDS_SORTEADAS;
+
+        List<ParticipanteMotor> participantes(int n) {
+            return switch (this) {
+                case ID_CRESCE_COM_A_SEED -> MataMataFixtures.participantes(n);
+                case ID_CAI_COM_A_SEED -> participantesComIdInvertido(n);
+                case SEEDS_SORTEADAS -> ParticipantesDeTeste.com(n);
+            };
+        }
+
+        /** A config com o seeding do elenco (MANUAL para os dois primeiros, ALEATORIO para o último). */
+        ConfigMataMata configurar(ConfigMataMata base) {
+            return comSeeding(base, this == SEEDS_SORTEADAS ? Seeding.ALEATORIO : Seeding.MANUAL);
+        }
+
+        /** O id da seed, nos elencos que a informam. */
+        long idDaSeed(int seed) {
+            return switch (this) {
+                case ID_CRESCE_COM_A_SEED -> MataMataFixtures.idDaSeed(seed);
+                case ID_CAI_COM_A_SEED -> idInvertidoDaSeed(seed);
+                case SEEDS_SORTEADAS -> throw new UnsupportedOperationException("As seeds saem do sorteio");
+            };
+        }
+    }
+
+    /** {@code n} participantes MANUAL em que a melhor seed tem o maior id (a seed {@code s} é o id 1000 - 7 s). */
+    static List<ParticipanteMotor> participantesComIdInvertido(int n) {
+        List<ParticipanteMotor> lista = new ArrayList<>();
+        for (int seed = 1; seed <= n; seed++) {
+            lista.add(new ParticipanteMotor(idInvertidoDaSeed(seed), "Time " + seed, seed));
+        }
+        return lista;
+    }
+
+    static long idInvertidoDaSeed(int seed) {
+        return 1000L - 7L * seed;
     }
 
     // ---------------------------------------------------------------- resultados
@@ -108,7 +174,12 @@ final class MataMataFixtures {
     // ---------------------------------------------------------------- leitura do estado
 
     static EstadoMataMata calcular(ConfigMataMata config, int n, ResultadoMataMata... resultados) {
-        return FORMATO.calcular(config, participantes(n), List.of(resultados), SEED);
+        return calcularCom(config, participantes(n), resultados);
+    }
+
+    static EstadoMataMata calcularCom(ConfigMataMata config, List<ParticipanteMotor> participantes,
+            ResultadoMataMata... resultados) {
+        return FORMATO.calcular(config, participantes, List.of(resultados), SEED);
     }
 
     static FaseEstado fase(EstadoMataMata estado, int ordem) {
@@ -169,7 +240,7 @@ final class MataMataFixtures {
      */
     static Torneio jogarAteOFim(ConfigMataMata config, List<ParticipanteMotor> participantes, long seedSorteio,
             Politica politica) {
-        Map<Long, Integer> seeds = seeds(participantes);
+        Map<Long, Integer> seeds = seedsEfetivas(config, participantes, seedSorteio);
         List<ResultadoMataMata> resultados = new ArrayList<>();
         EstadoMataMata estado = FORMATO.calcular(config, participantes, resultados, seedSorteio);
         for (int guarda = 0; guarda < 10_000; guarda++) {
