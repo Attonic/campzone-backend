@@ -15,6 +15,9 @@
 	<description>CampZone: backend da plataforma de campeonatos</description>
 	<properties>
 		<java.version>21</java.version>
+		<!-- JaCoCo: cobertura mínima (linhas e ramos) do pacote motor; abaixo disso o verify falha. -->
+		<jacoco.version>0.8.16</jacoco.version>
+		<motor.cobertura.minima>0.90</motor.cobertura.minima>
 		<!-- Perfil do ./mvnw spring-boot:run (ADR 0004). Só vale para o plugin; java -jar não é afetado e exige
 		     SPRING_PROFILES_ACTIVE. Para outro perfil: ./mvnw spring-boot:run -Dspring-boot.run.profiles=prod -->
 		<spring-boot.run.profiles>dev</spring-boot.run.profiles>
@@ -93,6 +96,62 @@
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
+			</plugin>
+			<plugin>
+				<groupId>org.jacoco</groupId>
+				<artifactId>jacoco-maven-plugin</artifactId>
+				<version>${jacoco.version}</version>
+				<executions>
+					<!-- append=false: cada execução parte de um jacoco.exec novo, para dados de testes antigos não
+					     mascararem uma queda de cobertura em builds locais sem clean. -->
+					<execution>
+						<id>agente</id>
+						<goals>
+							<goal>prepare-agent</goal>
+						</goals>
+						<configuration>
+							<append>false</append>
+						</configuration>
+					</execution>
+					<!-- Relatório informativo de todos os pacotes: target/site/jacoco/index.html -->
+					<execution>
+						<id>relatorio</id>
+						<phase>verify</phase>
+						<goals>
+							<goal>report</goal>
+						</goals>
+					</execution>
+					<!-- Regra de cobertura só do pacote motor (e subpacotes); os demais pacotes ficam de fora dela. -->
+					<execution>
+						<id>cobertura-do-motor</id>
+						<phase>verify</phase>
+						<goals>
+							<goal>check</goal>
+						</goals>
+						<configuration>
+							<includes>
+								<include>br/com/codeacle/campzone/motor/**</include>
+							</includes>
+							<rules>
+								<rule>
+									<element>BUNDLE</element>
+									<limits>
+										<limit>
+											<counter>LINE</counter>
+											<value>COVEREDRATIO</value>
+											<minimum>${motor.cobertura.minima}</minimum>
+										</limit>
+										<limit>
+											<counter>BRANCH</counter>
+											<value>COVEREDRATIO</value>
+											<minimum>${motor.cobertura.minima}</minimum>
+										</limit>
+									</limits>
+								</rule>
+							</rules>
+						</configuration>
+					</execution>
+				</executions>
 			</plugin>
 		</plugins>
 	</build>

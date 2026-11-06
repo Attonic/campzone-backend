@@ -140,6 +140,18 @@ O schema é gerado pelo Hibernate (`ddl-auto=update`); não há migrations. Nenh
 Os testes usam Testcontainers (um PostgreSQL descartável), não o banco do `docker-compose.yml`; por isso o Docker
 precisa estar rodando, mas o compose não. Os testes de perfis ignoram variáveis de ambiente como `DB_URL`.
 
+### Cobertura (JaCoCo)
+
+O `verify` gera o relatório em `target/site/jacoco/index.html` e **falha** se o pacote `motor` (com subpacotes) ficar
+abaixo de 90% de cobertura de linhas ou de ramos. A regra vale só para o `motor`; os outros pacotes aparecem no
+relatório, mas não são cobrados. O limite está em `motor.cobertura.minima` no `pom.xml`.
+
+Os testes do motor são JUnit puro (sem Spring) e rodam em segundos:
+
+```bash
+./mvnw test -Dtest='br.com.codeacle.campzone.motor.**.*Test'
+```
+
 ## CI
 
 `.github/workflows/ci.yml` roda `./mvnw -B verify` com Temurin 21 em pull requests e em push na `main`.
