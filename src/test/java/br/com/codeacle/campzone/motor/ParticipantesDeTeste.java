@@ -26,4 +26,16 @@ public final class ParticipantesDeTeste {
         }
         return lista;
     }
+
+    /**
+     * Um participante por seed informada, com os mesmos ids de {@link #com(int)} (10, 17, 24...); {@code null} deixa o
+     * participante sem seed.
+     */
+    public static List<ParticipanteMotor> comSeeds(Integer... seeds) {
+        List<ParticipanteMotor> lista = new ArrayList<>();
+        for (int i = 0; i < seeds.length; i++) {
+            lista.add(new ParticipanteMotor(10L + 7L * i, "Time " + (i + 1), seeds[i]));
+        }
+        return lista;
+    }
 }

@@ -4,6 +4,7 @@ import java.util.List;
 
 import br.com.codeacle.campzone.motor.ConfigInvalidaException;
 import br.com.codeacle.campzone.motor.FormatoCompeticao;
+import br.com.codeacle.campzone.motor.OrdemSorteada;
 import br.com.codeacle.campzone.motor.ParticipanteMotor;
 import br.com.codeacle.campzone.motor.ParticipantesInvalidosException;
 import br.com.codeacle.campzone.motor.ResultadoInvalidoException;
@@ -14,8 +15,8 @@ import br.com.codeacle.campzone.motor.ValidadorParticipantes;
  * Formato pontos corridos: todos contra todos em um ou mais turnos, com classificação por pontos e desempates
  * configuráveis. Sem estado e determinístico; veja o ADR 0005 e o Javadoc de {@link FormatoCompeticao}.
  */
-public final class PontosCorridosFormato
-        implements FormatoCompeticao<ConfigPontosCorridos, TabelaPontosCorridos, Classificacao> {
+public final class PontosCorridosFormato implements
+        FormatoCompeticao<ConfigPontosCorridos, TabelaPontosCorridos, ResultadoJogo, Classificacao> {
 
     /**
      * Gera a tabela round-robin (método do círculo). A ordem da tabela é sorteada com {@code seedSorteio}; com

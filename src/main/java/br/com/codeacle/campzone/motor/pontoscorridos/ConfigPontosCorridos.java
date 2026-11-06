@@ -15,14 +15,18 @@ import br.com.codeacle.campzone.motor.ConfigInvalidaException;
  * @param pontosDerrota pontos por derrota (pode ser negativo)
  * @param permiteEmpate se {@code false}, um jogo empatado é rejeitado
  * @param criterios     critérios de desempate, na ordem de aplicação
- * @throws ConfigInvalidaException se {@code turnos < 1}; se os pontos não respeitarem
- *                                 {@code vitória > derrota} e {@code vitória >= empate >= derrota}; se os critérios
- *                                 forem vazios ou repetidos; se {@link CriterioDesempate#PONTOS} não for o primeiro;
- *                                 ou se {@link CriterioDesempate#SORTEIO} não for o último
  */
 public record ConfigPontosCorridos(int turnos, int pontosVitoria, int pontosEmpate, int pontosDerrota,
         boolean permiteEmpate, List<CriterioDesempate> criterios) {
 
+    /**
+     * Valida a configuração do formato.
+     *
+     * @throws ConfigInvalidaException se {@code turnos < 1}; se os pontos não respeitarem
+     *                                 {@code vitória > derrota} e {@code vitória >= empate >= derrota}; se os critérios
+     *                                 forem vazios ou repetidos; se {@link CriterioDesempate#PONTOS} não for o primeiro;
+     *                                 ou se {@link CriterioDesempate#SORTEIO} não for o último
+     */
     public ConfigPontosCorridos {
         if (turnos < 1) {
             throw new ConfigInvalidaException("O número de turnos deve ser pelo menos 1");

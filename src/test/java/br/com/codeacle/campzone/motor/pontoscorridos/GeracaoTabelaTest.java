@@ -191,6 +191,31 @@ class GeracaoTabelaTest {
 
     // ---------------------------------------------------------------- turnos
 
+    static Stream<Arguments> cenariosComMaisDeUmTurno() {
+        return cenarios().filter(argumentos -> (int) argumentos.get()[1] >= 2);
+    }
+
+    /**
+     * Trava o comportamento atual na virada entre turnos: o turno seguinte repete o anterior (com o mando invertido
+     * nos pares), então quase todos repetem o mando entre a última rodada de um turno e a primeira do próximo. Só
+     * dois escapam: com {@code n} par, o fixo e o último do círculo; com {@code n} ímpar, os dois que folgam numa
+     * das rodadas. O total é {@code n-2} em qualquer virada. Se a geração melhorar, este teste deve mudar de
+     * propósito.
+     */
+    @ParameterizedTest(name = "n={0}, turnos={1}, seed={2}")
+    @MethodSource("cenariosComMaisDeUmTurno")
+    void viradaEntreTurnosTemNMenosDoisQuebrasDeMando(int n, int turnos, long seed) {
+        TabelaPontosCorridos tabela = gerar(n, turnos, seed);
+
+        for (int turno = 1; turno < turnos; turno++) {
+            RodadaGerada ultima = rodadasDoTurno(tabela, turno).getLast();
+            RodadaGerada primeira = rodadasDoTurno(tabela, turno + 1).getFirst();
+
+            assertThat(quebrasNaVirada(ultima, primeira)).as("virada do turno %d para o %d, n=%d", turno, turno + 1, n)
+                    .isEqualTo(n - 2);
+        }
+    }
+
     @ParameterizedTest(name = "n={0}, turnos={1}, seed={2}")
     @MethodSource("cenarios")
     void turnosSeRepetemComMandoInvertidoNosPares(int n, int turnos, long seed) {
@@ -299,6 +324,24 @@ class GeracaoTabelaTest {
 
     private static List<RodadaGerada> rodadasDoTurno(TabelaPontosCorridos tabela, int turno) {
         return tabela.rodadas().stream().filter(r -> r.turno() == turno).toList();
+    }
+
+    /** Participantes que jogam nas duas rodadas e têm o mesmo mando nelas (quem folga numa delas não conta). */
+    private static int quebrasNaVirada(RodadaGerada ultima, RodadaGerada primeira) {
+        Map<Long, Boolean> mandoNaUltima = mandos(ultima);
+        Map<Long, Boolean> mandoNaPrimeira = mandos(primeira);
+        return (int) mandoNaUltima.entrySet().stream()
+                .filter(e -> e.getValue().equals(mandoNaPrimeira.get(e.getKey()))).count();
+    }
+
+    /** Mando de cada participante que joga na rodada: {@code true} em casa, {@code false} fora. */
+    private static Map<Long, Boolean> mandos(RodadaGerada rodada) {
+        Map<Long, Boolean> mandos = new HashMap<>();
+        rodada.jogos().forEach(j -> {
+            mandos.put(j.mandanteId(), true);
+            mandos.put(j.visitanteId(), false);
+        });
+        return mandos;
     }
 
     private static int quebrasNoTurno(TabelaPontosCorridos tabela, int turno, boolean pularFolga) {
