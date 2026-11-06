@@ -64,6 +64,11 @@ campeonato/
 - Constraints e índices nas anotações JPA (`@Table(uniqueConstraints, indexes)`, `@Column`).
 - Dados iniciais (plano grátis) por um `ApplicationRunner` idempotente.
 - Mudança de entidade que possa quebrar dados existentes (renomear/remover coluna, tipo incompatível): avisar o orquestrador antes de fazer.
+- Regras para o schema evoluir só com `update` (ADR 0003 no workspace):
+  - **Enum gravado como texto, sem CHECK**: campo `String` privado (varchar folgado) na entidade, com getters e fábricas tipados no enum. Nada de `@Enumerated`, porque o Hibernate gera `CHECK (... IN ...)`, que o `update` nunca altera. O `SchemaSemChecksDeEnumTest` garante essa regra.
+  - **Coluna nova sempre anulável** (wrapper `Integer`/`Long`/`Boolean`, sem `nullable = false`). A obrigatoriedade fica no domínio. Primitivo novo vira `NOT NULL` sem default e quebra tabela com linhas.
+  - `@Check` manual só para regra estável (ex.: placar ≥ 0), com nome `ck_*`.
+  - Uniques não são recriadas a cada boot (`unique_constraint_strategy: RECREATE_QUIETLY`).
 
 ### Multi-tenant (inegociável)
 

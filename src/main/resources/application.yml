@@ -10,3 +10,9 @@ spring:
     hibernate:
       # Sem migrations (decisão do projeto): o schema vem das entidades.
       ddl-auto: update
+    properties:
+      hibernate:
+        # O padrão (DROP_RECREATE_QUIETLY) derruba e recria as unique constraints a cada startup; com
+        # RECREATE_QUIETLY só tenta criar as que faltam e ignora as que já existem.
+        schema_update:
+          unique_constraint_strategy: RECREATE_QUIETLY
