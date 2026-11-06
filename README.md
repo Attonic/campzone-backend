@@ -1,5 +1,7 @@
 # CampZone: Backend
 
+> Parte do CampZone, desenvolvido por agentes de IA com revisão independente a cada tarefa. O processo, as specs e as decisões de arquitetura estão em [Attonic/campzone](https://github.com/Attonic/campzone).
+
 API do CampZone (SaaS para organizar campeonatos). Java 21, Spring Boot 4.1, Maven, PostgreSQL.
 Regras de arquitetura e padrões: veja `CLAUDE.md`.
 
