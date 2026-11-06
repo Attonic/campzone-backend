@@ -1,0 +1,12 @@
+# Configuração comum a todos os perfis. Sem credenciais: elas ficam em application-dev.yml (Docker local)
+# e em variáveis de ambiente (prod). Sem perfil informado, o perfil padrão é o dev.
+spring:
+  application:
+    name: campzone
+  profiles:
+    default: dev
+  jpa:
+    open-in-view: false
+    hibernate:
+      # Sem migrations (decisão do projeto): o schema vem das entidades.
+      ddl-auto: update

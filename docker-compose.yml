@@ -1,0 +1,21 @@
+services:
+  postgres:
+    image: postgres:18
+    container_name: campzone-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-campzone}
+      POSTGRES_USER: ${POSTGRES_USER:-campzone}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-campzone}
+    ports:
+      - "127.0.0.1:${POSTGRES_PORT:-5433}:5432"
+    volumes:
+      - campzone-pgdata:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  campzone-pgdata:
