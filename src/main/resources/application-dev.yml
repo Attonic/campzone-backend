@@ -9,3 +9,16 @@ spring:
 logging:
   level:
     br.com.codeacle.campzone: DEBUG
+
+# Tudo abaixo é só de desenvolvimento local e NÃO é segredo: nunca use estes valores fora do dev.
+campzone:
+  jwt:
+    # NÃO é segredo: chave fixa só para dev (mínimo 32 bytes). Em prod vem de JWT_SECRET.
+    segredo: dev-nao-e-segredo-campzone-jwt-hmac-sha256-0123456789
+  admin:
+    email: admin@campzone.dev
+    senha: admin12345
+  dev:
+    organizador:
+      email: organizador@campzone.dev
+      senha: organizador123

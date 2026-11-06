@@ -1,5 +1,6 @@
 package br.com.codeacle.campzone.common.config;
 
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 import org.springframework.beans.factory.config.BeanFactoryPostProcessor;
@@ -9,17 +10,24 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 
+import br.com.codeacle.campzone.common.security.JwtProperties;
+
 /**
- * Falha rápida e com mensagem clara no perfil {@code prod} quando faltam as variáveis do banco. Roda antes da
- * criação de qualquer bean, evitando o erro obscuro do pool de conexões com a URL não resolvida.
- * A checagem exige {@code DB_URL}, {@code DB_USER} e {@code DB_PASSWORD} de propósito: {@code SPRING_DATASOURCE_*}
- * sozinhas não bastam, porque o {@code application-prod.yml} só lê as variáveis {@code DB_*}.
+ * Falha rápida e com mensagem clara no perfil {@code prod} quando faltam as variáveis obrigatórias: banco
+ * ({@code DB_*}), segredo do JWT ({@code JWT_SECRET}, mínimo 32 bytes) e credenciais do admin da plataforma
+ * ({@code ADMIN_EMAIL}, {@code ADMIN_SENHA}, mínimo 12 caracteres). Roda antes da criação de qualquer bean, evitando erros obscuros
+ * (pool de conexões com a URL não resolvida, placeholder sem valor). A checagem do banco exige {@code DB_URL},
+ * {@code DB_USER} e {@code DB_PASSWORD} de propósito: {@code SPRING_DATASOURCE_*} sozinhas não bastam, porque o
+ * {@code application-prod.yml} só lê as variáveis {@code DB_*}.
  */
 @Component
 @Profile("prod")
 public class VariaveisObrigatoriasProd implements BeanFactoryPostProcessor, EnvironmentAware {
 
-    static final List<String> OBRIGATORIAS = List.of("DB_URL", "DB_USER", "DB_PASSWORD");
+    static final List<String> OBRIGATORIAS = List.of("DB_URL", "DB_USER", "DB_PASSWORD", "JWT_SECRET",
+            "ADMIN_EMAIL", "ADMIN_SENHA");
+
+    static final int TAMANHO_MINIMO_SENHA_ADMIN = 12;
 
     private Environment environment;
 
@@ -34,6 +42,16 @@ public class VariaveisObrigatoriasProd implements BeanFactoryPostProcessor, Envi
         if (!ausentes.isEmpty()) {
             throw new IllegalStateException("Perfil prod: variáveis de ambiente obrigatórias ausentes ou vazias: "
                     + String.join(", ", ausentes) + ". Defina-as antes de iniciar a aplicação.");
+        }
+        String senhaAdmin = environment.getProperty("ADMIN_SENHA");
+        if (senhaAdmin.length() < TAMANHO_MINIMO_SENHA_ADMIN) {
+            throw new IllegalStateException("Perfil prod: ADMIN_SENHA deve ter no mínimo "
+                    + TAMANHO_MINIMO_SENHA_ADMIN + " caracteres.");
+        }
+        String segredo = environment.getProperty("JWT_SECRET");
+        if (segredo.getBytes(StandardCharsets.UTF_8).length < JwtProperties.TAMANHO_MINIMO_SEGREDO_BYTES) {
+            throw new IllegalStateException("Perfil prod: JWT_SECRET deve ter no mínimo "
+                    + JwtProperties.TAMANHO_MINIMO_SEGREDO_BYTES + " bytes.");
         }
     }
 

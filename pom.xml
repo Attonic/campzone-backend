@@ -15,6 +15,9 @@
 	<description>CampZone: backend da plataforma de campeonatos</description>
 	<properties>
 		<java.version>21</java.version>
+		<!-- Perfil do ./mvnw spring-boot:run (ADR 0004). Só vale para o plugin; java -jar não é afetado e exige
+		     SPRING_PROFILES_ACTIVE. Para outro perfil: ./mvnw spring-boot:run -Dspring-boot.run.profiles=prod -->
+		<spring-boot.run.profiles>dev</spring-boot.run.profiles>
 	</properties>
 	<dependencies>
 		<dependency>
@@ -24,6 +27,10 @@
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-security</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-security-oauth2-resource-server</artifactId>
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
@@ -47,6 +54,11 @@
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-security-test</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-security-oauth2-resource-server-test</artifactId>
 			<scope>test</scope>
 		</dependency>
 		<dependency>

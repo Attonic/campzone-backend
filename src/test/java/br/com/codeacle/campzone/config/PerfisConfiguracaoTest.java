@@ -23,6 +23,8 @@ import br.com.codeacle.campzone.CampzoneApplication;
  */
 class PerfisConfiguracaoTest {
 
+    private static final String SEGREDO = "segredo-de-teste-campzone-0123456789-abcdef";
+
     @Configuration
     static class ConfiguracaoVazia {
     }
@@ -51,12 +53,42 @@ class PerfisConfiguracaoTest {
     }
 
     @Test
-    void semPerfilInformadoOPadraoEODev() {
+    void semPerfilAtivoAAplicacaoNaoSobeEExplicaOQueFazer() {
+        assertThatThrownBy(() -> construtor(CampzoneApplication.class).run())
+                .hasStackTraceContaining("Nenhum perfil ativo: defina SPRING_PROFILES_ACTIVE=dev "
+                        + "(desenvolvimento) ou prod.");
+    }
+
+    @Test
+    void devEProdAtivosJuntosNaoSobemMesmoComTodasAsVariaveisDeProd() {
+        assertThatThrownBy(() -> construtor(CampzoneApplication.class, "spring.profiles.active=dev,prod",
+                "DB_URL=jdbc:postgresql://db:5432/x", "DB_USER=u", "DB_PASSWORD=p", "JWT_SECRET=" + SEGREDO,
+                "ADMIN_EMAIL=a@x.com", "ADMIN_SENHA=senha-admin-forte").run())
+                .hasStackTraceContaining("Perfis dev e prod não podem estar ativos ao mesmo tempo.");
+        assertThatThrownBy(() -> construtor(CampzoneApplication.class, "spring.profiles.active=prod,dev").run())
+                .hasStackTraceContaining("Perfis dev e prod não podem estar ativos ao mesmo tempo.");
+    }
+
+    @Test
+    void naoExistePerfilPadrao() {
         try (ConfigurableApplicationContext contexto = construtor().run()) {
             Environment env = contexto.getEnvironment();
-            assertThat(env.getDefaultProfiles()).contains("dev");
+            assertThat(env.getActiveProfiles()).isEmpty();
+            assertThat(env.getDefaultProfiles()).containsExactly("default");
+            assertThat(env.getProperty("campzone.admin.email")).isNull();
+            assertThat(env.getProperty("campzone.jwt.segredo")).isNull();
+        }
+    }
+
+    @Test
+    void perfilDevUsaOBancoLocalEAsContasDeDesenvolvimento() {
+        try (ConfigurableApplicationContext contexto = construtor("spring.profiles.active=dev").run()) {
+            Environment env = contexto.getEnvironment();
+            assertThat(env.getActiveProfiles()).containsExactly("dev");
             assertThat(env.getProperty("spring.datasource.url")).isEqualTo("jdbc:postgresql://localhost:5433/campzone");
             assertThat(env.getProperty("logging.level.br.com.codeacle.campzone")).isEqualTo("DEBUG");
+            assertThat(env.getProperty("campzone.admin.email")).isEqualTo("admin@campzone.dev");
+            assertThat(env.getProperty("campzone.jwt.segredo")).hasSizeGreaterThanOrEqualTo(32);
         }
     }
 
@@ -99,8 +131,53 @@ class PerfisConfiguracaoTest {
     @Test
     void aplicacaoRealEmProdComDbUrlVazioCitaApenasDbUrl() {
         assertThatThrownBy(() -> construtor(CampzoneApplication.class, "spring.profiles.active=prod",
-                "DB_URL=", "DB_USER=u", "DB_PASSWORD=p").run())
+                "DB_URL=", "DB_USER=u", "DB_PASSWORD=p", "JWT_SECRET=" + SEGREDO, "ADMIN_EMAIL=a@x.com",
+                "ADMIN_SENHA=senha-admin-forte").run())
                 .hasStackTraceContaining("ausentes ou vazias: DB_URL. Defina");
+    }
+
+    @Test
+    void prodSemJwtSecretEAdminNaoSobeEListaOQueFalta() {
+        assertThatThrownBy(() -> construtor(CampzoneApplication.class, "spring.profiles.active=prod",
+                "DB_URL=jdbc:postgresql://db:5432/x", "DB_USER=u", "DB_PASSWORD=p").run())
+                .hasStackTraceContaining("ausentes ou vazias: JWT_SECRET, ADMIN_EMAIL, ADMIN_SENHA. Defina");
+    }
+
+    @Test
+    void prodSemApenasOJwtSecretCitaSoEle() {
+        assertThatThrownBy(() -> construtor(CampzoneApplication.class, "spring.profiles.active=prod",
+                "DB_URL=jdbc:postgresql://db:5432/x", "DB_USER=u", "DB_PASSWORD=p", "ADMIN_EMAIL=a@x.com",
+                "ADMIN_SENHA=senha-admin-forte").run())
+                .hasStackTraceContaining("ausentes ou vazias: JWT_SECRET. Defina");
+    }
+
+    @Test
+    void prodComJwtSecretCurtoNaoSobe() {
+        assertThatThrownBy(() -> construtor(CampzoneApplication.class, "spring.profiles.active=prod",
+                "DB_URL=jdbc:postgresql://db:5432/x", "DB_USER=u", "DB_PASSWORD=p", "JWT_SECRET=curto",
+                "ADMIN_EMAIL=a@x.com", "ADMIN_SENHA=senha-admin-forte").run())
+                .hasStackTraceContaining("JWT_SECRET deve ter no mínimo 32 bytes");
+    }
+
+    @Test
+    void prodComSenhaDeAdminCurtaNaoSobe() {
+        assertThatThrownBy(() -> construtor(CampzoneApplication.class, "spring.profiles.active=prod",
+                "DB_URL=jdbc:postgresql://db:5432/x", "DB_USER=u", "DB_PASSWORD=p", "JWT_SECRET=" + SEGREDO,
+                "ADMIN_EMAIL=a@x.com", "ADMIN_SENHA=curta-11-ch").run())
+                .hasStackTraceContaining("ADMIN_SENHA deve ter no mínimo 12 caracteres");
+    }
+
+    @Test
+    void prodNaoTemDefaultParaSegredoENemParaAdmin() {
+        try (ConfigurableApplicationContext contexto = construtor("spring.profiles.active=prod").run()) {
+            Environment env = contexto.getEnvironment();
+            assertThatThrownBy(() -> env.getProperty("campzone.jwt.segredo"))
+                    .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("JWT_SECRET");
+            assertThatThrownBy(() -> env.getProperty("campzone.admin.email"))
+                    .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("ADMIN_EMAIL");
+            assertThatThrownBy(() -> env.getProperty("campzone.admin.senha"))
+                    .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("ADMIN_SENHA");
+        }
     }
 
     @Test

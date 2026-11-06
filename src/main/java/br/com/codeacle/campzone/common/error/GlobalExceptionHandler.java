@@ -20,6 +20,8 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
+import br.com.codeacle.campzone.common.domain.InvarianteDominioException;
+
 /**
  * Traduz erros em {@link ProblemDetail} (RFC 9457). Os erros padrão do Spring MVC (404, 405, 415...)
  * já são tratados pela classe base; aqui detalhamos a validação e evitamos vazar detalhes em erros inesperados.
@@ -43,6 +45,17 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         problema.setTitle("Erro de validação");
         problema.setProperty("erros", erros);
         return handleExceptionInternal(ex, problema, headers, HttpStatus.BAD_REQUEST, request);
+    }
+
+    /**
+     * Invariante de domínio violada (ex.: nome só com espaços) é entrada inválida que passou pela validação da
+     * borda: responde 400. A mensagem é escrita por nós nas entidades, então é segura para o cliente.
+     */
+    @ExceptionHandler(InvarianteDominioException.class)
+    public ProblemDetail handleInvarianteDominio(InvarianteDominioException ex) {
+        ProblemDetail problema = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
+        problema.setTitle("Dado inválido");
+        return problema;
     }
 
     /**
