@@ -111,27 +111,28 @@ class GoldenMataMataTest {
     }
 
     /**
-     * Quatro participantes, todo jogo 0 x 0 decidido pelo sorteio, com a seed 42. Pela fórmula do ADR (SplitMix64), os
-     * sorteios dão A nas semifinais 1 e 2 (fase 1), na disputa de 3º (fase 2) e na final (fase 3). Os perdedores das
-     * semifinais são as seeds 4 e 3, e o A da disputa é a seed 3 (id 24).
+     * Quatro participantes, todo jogo 0 x 0 decidido pelo sorteio, com a seed -5. Pela fórmula do ADR (SplitMix64), o
+     * sorteio favorece o B na semifinal 1 (fase 1), na disputa de 3º (fase 2) e na final (fase 3), e o A só na
+     * semifinal 2. Assim o golden cobre os dois lados do sorteio, inclusive a disputa de 3º e a final: o campeão é a
+     * seed 4 (id 31), que vence a final como B, e o 3º lugar é a seed 3 (id 24), que vence a disputa como B.
      */
     @Test
-    void quatroParticipantesDecididosNoSorteioComSeed42() {
+    void quatroParticipantesDecididosNoSorteioComSeedMenos5() {
         ConfigMataMata config = new ConfigMataMata(TipoConfronto.JOGO_UNICO, null, List.of(SORTEIO), Seeding.MANUAL,
                 true);
         List<ParticipanteMotor> participantes = participantes(4);
 
-        MataMataFixtures.Torneio torneio = MataMataFixtures.jogarAteOFim(config, participantes, 42L,
+        MataMataFixtures.Torneio torneio = MataMataFixtures.jogarAteOFim(config, participantes, -5L,
                 (fase, confronto, jogo, seeds) -> placar(fase.ordem(), confronto.posicao(), jogo.numeroJogo(), 0, 0));
 
         assertThat(linhas(torneio.estado())).containsExactly(
                 "F1 Semifinal ELIMINATORIA",
-                "  C1 10-31 vence=10 | J1:10x31:DISPUTADO",
+                "  C1 10-31 vence=31 | J1:10x31:DISPUTADO",
                 "  C2 17-24 vence=17 | J1:17x24:DISPUTADO",
                 "F2 Disputa de 3º lugar TERCEIRO_LUGAR",
-                "  C1 24-31 vence=24 | J1:24x31:DISPUTADO",
+                "  C1 10-24 vence=24 | J1:10x24:DISPUTADO",
                 "F3 Final FINAL",
-                "  C1 10-17 vence=10 | J1:10x17:DISPUTADO",
-                "campeao=10 vice=17 terceiro=24");
+                "  C1 17-31 vence=31 | J1:17x31:DISPUTADO",
+                "campeao=31 vice=17 terceiro=24");
     }
 }
