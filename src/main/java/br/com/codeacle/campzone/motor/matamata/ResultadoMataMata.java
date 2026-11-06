@@ -58,7 +58,8 @@ public record ResultadoMataMata(int ordemFase, int posicao, int numeroJogo, int 
             throw new ResultadoInvalidoException("Informe os dois lados da " + nome + " ou nenhum");
         }
         if (mandante != null && (mandante < 0 || visitante < 0)) {
-            throw new ResultadoInvalidoException("A " + nome + " não pode ser negativa (" + mandante + " x " + visitante + ")");
+            throw new ResultadoInvalidoException(
+                    "A " + nome + " não pode ser negativa (" + mandante + " x " + visitante + ")");
         }
     }
 }

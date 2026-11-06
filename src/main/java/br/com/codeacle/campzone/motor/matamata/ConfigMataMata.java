@@ -25,10 +25,10 @@ public record ConfigMataMata(TipoConfronto tipoConfronto, Integer melhorDe, List
      * @throws ConfigInvalidaException se o tipo de confronto ou o seeding forem nulos; se {@code melhorDe} for
      *                                 informado fora de {@code SERIE}, ou numa série não for ímpar e pelo menos 3; se
      *                                 os desempates forem vazios ou repetidos; se {@code GOLS_FORA} aparecer sem
-     *                                 {@code IDA_E_VOLTA}; se {@code SORTEIO} aparecer numa {@code SERIE}; ou se a lista
-     *                                 não terminar no primeiro critério terminal ({@code PENALTIS} ou {@code SORTEIO}),
-     *                                 seja por não ter nenhum (um empate seria impossível de lançar) ou por ter algum
-     *                                 critério depois dele (que nunca seria usado)
+     *                                 {@code IDA_E_VOLTA}; se {@code SORTEIO} aparecer numa {@code SERIE}; ou se a
+     *                                 lista não terminar no primeiro critério terminal ({@code PENALTIS} ou
+     *                                 {@code SORTEIO}), seja por não ter nenhum (um empate seria impossível de
+     *                                 lançar) ou por ter algum critério depois dele (que nunca seria usado)
      */
     public ConfigMataMata {
         if (tipoConfronto == null) {
@@ -38,10 +38,12 @@ public record ConfigMataMata(TipoConfronto tipoConfronto, Integer melhorDe, List
             throw new ConfigInvalidaException("O seeding é obrigatório");
         }
         if (tipoConfronto != TipoConfronto.SERIE && melhorDe != null) {
-            throw new ConfigInvalidaException("melhorDe só pode ser informado numa série (SERIE), não em " + tipoConfronto);
+            throw new ConfigInvalidaException(
+                    "melhorDe só pode ser informado numa série (SERIE), não em " + tipoConfronto);
         }
         if (tipoConfronto == TipoConfronto.SERIE && (melhorDe == null || melhorDe < 3 || melhorDe % 2 == 0)) {
-            throw new ConfigInvalidaException("Numa série, melhorDe deve ser ímpar e pelo menos 3 (recebido: " + melhorDe + ")");
+            throw new ConfigInvalidaException(
+                    "Numa série, melhorDe deve ser ímpar e pelo menos 3 (recebido: " + melhorDe + ")");
         }
         if (desempates == null || desempates.isEmpty() || desempates.stream().anyMatch(Objects::isNull)) {
             throw new ConfigInvalidaException("Informe ao menos um critério de desempate");
@@ -54,12 +56,14 @@ public record ConfigMataMata(TipoConfronto tipoConfronto, Integer melhorDe, List
         }
         if (tipoConfronto == TipoConfronto.SERIE && desempates.contains(DesempateMataMata.SORTEIO)) {
             throw new ConfigInvalidaException(
-                    "SORTEIO não vale numa série: sortear o vencedor de um jogo de série não faz sentido em campeonato");
+                    "SORTEIO não vale numa série: sortear o vencedor de um jogo de série não faz sentido em"
+                            + " campeonato");
         }
         int terminal = indiceDoPrimeiroTerminal(desempates);
         if (terminal < 0) {
             throw new ConfigInvalidaException(
-                    "Os desempates precisam terminar num critério final (PENALTIS ou SORTEIO); sem ele um empate não teria como ser decidido");
+                    "Os desempates precisam terminar num critério final (PENALTIS ou SORTEIO); sem ele um empate"
+                            + " não teria como ser decidido");
         }
         if (terminal != desempates.size() - 1) {
             throw new ConfigInvalidaException("Nenhum critério pode vir depois de " + desempates.get(terminal)

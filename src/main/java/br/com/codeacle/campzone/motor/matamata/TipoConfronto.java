@@ -9,6 +9,8 @@ public enum TipoConfronto {
     /** Dois jogos: a ida com a pior seed (B) como mandante e a volta com a melhor seed (A). Decide o agregado. */
     IDA_E_VOLTA,
 
-    /** Série melhor de N jogos ({@code melhorDe}), com o mando alternando a partir de A. Vence quem chegar à maioria. */
+    /**
+     * Série melhor de N jogos ({@code melhorDe}), com o mando alternando a partir de A. Vence quem chegar à maioria.
+     */
     SERIE
 }

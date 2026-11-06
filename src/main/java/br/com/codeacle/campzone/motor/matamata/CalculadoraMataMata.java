@@ -133,7 +133,9 @@ final class CalculadoraMataMata {
         if (!fechada(semifinal)) {
             return Collections.nCopies(1, null);
         }
-        return List.of(ordenarPorSeed(perdedor(semifinal.confrontos().get(0)), perdedor(semifinal.confrontos().get(1))));
+        long perdedorUm = perdedor(semifinal.confrontos().get(0));
+        long perdedorDois = perdedor(semifinal.confrontos().get(1));
+        return List.of(ordenarPorSeed(perdedorUm, perdedorDois));
     }
 
     private Vagas ordenarPorSeed(long um, long outro) {
@@ -181,14 +183,18 @@ final class CalculadoraMataMata {
                 jogos(vagas.a(), vagas.b(), quantidade, avaliacao.situacoes()));
     }
 
-    /** Jogos do confronto, com o mando de cada tipo. Sem situações, é um confronto que ainda aguarda os participantes. */
+    /**
+     * Jogos do confronto, com o mando de cada tipo. Sem situações, é um confronto que ainda aguarda os participantes.
+     */
     private List<JogoEstado> jogos(Long a, Long b, int quantidade, List<SituacaoJogo> situacoes) {
         List<JogoEstado> jogos = new ArrayList<>();
         for (int numero = 1; numero <= quantidade; numero++) {
             boolean mandanteEhA = AvaliadorConfronto.mandanteEhA(config, numero);
             Long mandante = mandanteEhA ? a : b;
             Long visitante = mandanteEhA ? b : a;
-            SituacaoJogo situacao = situacoes == null ? SituacaoJogo.AGUARDANDO_PARTICIPANTES : situacoes.get(numero - 1);
+            SituacaoJogo situacao = situacoes == null
+                    ? SituacaoJogo.AGUARDANDO_PARTICIPANTES
+                    : situacoes.get(numero - 1);
             jogos.add(new JogoEstado(numero, mandante, visitante, situacao));
         }
         return jogos;
@@ -218,7 +224,8 @@ final class CalculadoraMataMata {
         if (!naoEncaixados.isEmpty()) {
             ChaveJogo chave = naoEncaixados.keySet().iterator().next();
             throw new ResultadoInvalidoException("O " + descrever(chave)
-                    + " não existe na chave (fase, confronto ou jogo inexistente, ou confronto de bye, que não tem jogos)");
+                    + " não existe na chave (fase, confronto ou jogo inexistente, ou confronto de bye,"
+                    + " que não tem jogos)");
         }
     }
 

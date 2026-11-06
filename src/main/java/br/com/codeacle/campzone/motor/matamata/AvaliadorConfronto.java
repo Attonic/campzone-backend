@@ -28,8 +28,8 @@ final class AvaliadorConfronto {
     /**
      * O que um desempate precisa saber do confronto (ou do jogo, na série) em disputa, do ponto de vista de A e B.
      *
-     * @param rotulo            o que se decide ("jogo 1 do confronto 2 da fase 1" ou "agregado do confronto..."), para as
-     *                          mensagens de erro
+     * @param rotulo            o que se decide ("jogo 1 do confronto 2 da fase 1" ou "agregado do confronto..."), para
+     *                          as mensagens de erro
      * @param a                 id do participante A
      * @param b                 id do participante B
      * @param placarA           placar de A no tempo normal (o agregado, na ida e volta)
@@ -144,8 +144,8 @@ final class AvaliadorConfronto {
         // A é visitante na ida e mandante na volta; B, o contrário
         long agregadoA = (long) ida.placarVisitante() + volta.placarMandante();
         long agregadoB = (long) ida.placarMandante() + volta.placarVisitante();
-        Disputa disputa = new Disputa("agregado do confronto " + posicao + " da fase " + ordemFase, a, b, agregadoA, agregadoB, ida.placarVisitante(),
-                volta.placarVisitante(), volta, true, sorteioFavoreceA);
+        Disputa disputa = new Disputa("agregado do confronto " + posicao + " da fase " + ordemFase, a, b, agregadoA,
+                agregadoB, ida.placarVisitante(), volta.placarVisitante(), volta, true, sorteioFavoreceA);
         return new Avaliacao(decidir(config.desempates(), disputa),
                 List.of(SituacaoJogo.DISPUTADO, SituacaoJogo.DISPUTADO));
     }
@@ -180,8 +180,9 @@ final class AvaliadorConfronto {
                             + " ainda não aceita resultado: lance antes os jogos anteriores da série");
                 }
                 boolean mandanteEhA = mandanteEhA(config, numero);
-                Disputa disputa = new Disputa(rotulo(jogo), a, b, mandanteEhA ? jogo.placarMandante() : jogo.placarVisitante(),
-                        mandanteEhA ? jogo.placarVisitante() : jogo.placarMandante(), null, null, jogo, mandanteEhA,
+                long placarA = mandanteEhA ? jogo.placarMandante() : jogo.placarVisitante();
+                long placarB = mandanteEhA ? jogo.placarVisitante() : jogo.placarMandante();
+                Disputa disputa = new Disputa(rotulo(jogo), a, b, placarA, placarB, null, null, jogo, mandanteEhA,
                         sorteioFavoreceA);
                 if (decidir(config.desempates(), disputa) == a) {
                     vitoriasA++;
