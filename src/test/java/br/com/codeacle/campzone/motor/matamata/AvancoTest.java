@@ -22,6 +22,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
+import br.com.codeacle.campzone.motor.ParticipanteMotor;
+
 /** Avanço de fase, posição dos vencedores, disputa de 3º lugar e pódio. Jogo único, seeds 1..n (MANUAL). */
 class AvancoTest {
 
@@ -238,6 +240,45 @@ class AvancoTest {
         assertThat(torneio.estado().campeaoId()).isEqualTo(idDaSeed(1));
         assertThat(torneio.estado().viceId()).isEqualTo(idDaSeed(2));
         assertThat(torneio.estado().terceiroId()).isNull();
+    }
+
+    // ---------------------------------------------------------------- o A é a melhor seed, não o menor id
+
+    /**
+     * Ids que caem com a seed (a seed {@code s} é o id {@code 1000 - 7 s}): a melhor seed tem o MAIOR id. Escolher o A
+     * pelo menor id, em vez da melhor seed, inverteria A e B em todas as fases depois da primeira.
+     */
+    @Test
+    void depoisDaPrimeiraFaseOAEAMelhorSeedMesmoComIdMaior() {
+        List<ParticipanteMotor> participantes = MataMataFixtures.participantesComIdInvertido(8);
+        // quartas por zebras e favoritos: 8 vence o 1; 4 vence o 5; 2 vence o 7; 6 vence o 3
+        // semifinais: 4 x 8 (4 vence) e 2 x 6 (6 vence)
+        EstadoMataMata estado = MataMataFixtures.calcularCom(comTerceiro, participantes, venceB(1, 1), venceA(1, 2),
+                venceA(1, 3), venceB(1, 4), venceA(2, 1), venceB(2, 2));
+
+        long seed2 = idInvertido(2);
+        long seed4 = idInvertido(4);
+        long seed6 = idInvertido(6);
+        long seed8 = idInvertido(8);
+        // semifinais: A é a seed 4 (id 972) contra a 8 (id 944), e a seed 2 (id 986) contra a 6 (id 958)
+        assertThat(confronto(estado, 2, 1).participanteAId()).isEqualTo(seed4).isGreaterThan(seed8);
+        assertThat(confronto(estado, 2, 1).participanteBId()).isEqualTo(seed8);
+        assertThat(confronto(estado, 2, 2).participanteAId()).isEqualTo(seed2).isGreaterThan(seed6);
+        assertThat(confronto(estado, 2, 2).participanteBId()).isEqualTo(seed6);
+        // final: 4 (A, id 972) contra 6 (B, id 958); o A manda o jogo
+        ConfrontoEstado decisao = confronto(estado, 4, 1);
+        assertThat(decisao.participanteAId()).isEqualTo(seed4).isGreaterThan(seed6);
+        assertThat(decisao.participanteBId()).isEqualTo(seed6);
+        assertThat(decisao.jogos().get(0).mandanteId()).isEqualTo(seed4);
+        // disputa de 3º: perdedores 8 (semi 1) e 2 (semi 2); o A é a seed 2 (id 986), que tem o id maior
+        ConfrontoEstado terceiro = confronto(estado, 3, 1);
+        assertThat(terceiro.participanteAId()).isEqualTo(seed2).isGreaterThan(seed8);
+        assertThat(terceiro.participanteBId()).isEqualTo(seed8);
+        assertThat(terceiro.jogos().get(0).mandanteId()).isEqualTo(seed2);
+    }
+
+    private static long idInvertido(int seed) {
+        return MataMataFixtures.idInvertidoDaSeed(seed);
     }
 
     // ---------------------------------------------------------------- pódio
